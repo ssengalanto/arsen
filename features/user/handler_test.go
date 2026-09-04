@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"arsen/pkg/cqrs"
+	"arsen/pkg/jwt"
 	"arsen/pkg/response"
 )
 
@@ -60,10 +61,14 @@ func setupRouter(
 	registerBus := cqrs.NewCommandBus[RegisterCommand, *RegisterResult](regHandler)
 	verifyBus := cqrs.NewCommandBus[VerifyEmailCommand, *VerifyEmailResult](verifyHandler)
 	resendBus := cqrs.NewCommandBus[ResendVerificationCommand, cqrs.Unit](resendHandler)
+	// Use a no-op profile handler so existing tests compile with the updated NewHandler signature.
+	profileBus := cqrs.NewQueryBus[GetProfileQuery, *GetProfileResult](&mockGetProfileHandler{})
 
 	r := chi.NewRouter()
-	h := NewHandler(registerBus, verifyBus, resendBus)
-	h.RegisterRoutes(r)
+	h := NewHandler(registerBus, verifyBus, resendBus, profileBus)
+	// Pass a JWT service for route registration (existing tests don't hit authenticated routes).
+	jwtSvc := jwt.NewService("test-secret-32-chars-long-enough", "test", "test")
+	h.RegisterRoutes(r, jwtSvc)
 	return r
 }
 
@@ -289,4 +294,145 @@ func TestHandler_ResendVerification_ErrorStillReturns200(t *testing.T) {
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
 
 	assert.Equal(t, "Acknowledgment", resp.Kind)
+}
+
+// ---------------------------------------------------------------------------
+// Mock query handler for GET /api/users/me
+// ---------------------------------------------------------------------------
+
+type mockGetProfileHandler struct {
+	result *GetProfileResult
+	err    error
+}
+
+func (m *mockGetProfileHandler) Handle(_ context.Context, _ GetProfileQuery) (*GetProfileResult, error) {
+	return m.result, m.err
+}
+
+// ---------------------------------------------------------------------------
+// Helper: build a Handler with profile query bus, mounted on chi with JWT auth.
+// ---------------------------------------------------------------------------
+
+func setupRouterWithAuth(
+	regHandler *mockRegisterHandler,
+	verifyHandler *mockVerifyEmailHandler,
+	resendHandler *mockResendVerificationHandler,
+	profileHandler *mockGetProfileHandler,
+	jwtSvc *jwt.Service,
+) http.Handler {
+	registerBus := cqrs.NewCommandBus[RegisterCommand, *RegisterResult](regHandler)
+	verifyBus := cqrs.NewCommandBus[VerifyEmailCommand, *VerifyEmailResult](verifyHandler)
+	resendBus := cqrs.NewCommandBus[ResendVerificationCommand, cqrs.Unit](resendHandler)
+	profileBus := cqrs.NewQueryBus[GetProfileQuery, *GetProfileResult](profileHandler)
+
+	r := chi.NewRouter()
+	h := NewHandler(registerBus, verifyBus, resendBus, profileBus)
+	h.RegisterRoutes(r, jwtSvc)
+	return r
+}
+
+// ---------------------------------------------------------------------------
+// T073: GET /api/users/me — Get profile endpoint
+// ---------------------------------------------------------------------------
+
+func TestHandler_GetProfile_Success(t *testing.T) {
+	jwtSvc := jwt.NewService("test-secret-32-chars-long-enough", "test", "test")
+	accessToken, err := jwtSvc.CreateToken("user-123", 15*time.Minute)
+	require.NoError(t, err)
+
+	now := time.Now().UTC().Truncate(time.Second)
+	profileMock := &mockGetProfileHandler{
+		result: &GetProfileResult{
+			User: &User{
+				ID:            "user-123",
+				Email:         "alice@example.com",
+				EmailVerified: true,
+				CreatedAt:     now,
+			},
+		},
+	}
+
+	router := setupRouterWithAuth(
+		&mockRegisterHandler{},
+		&mockVerifyEmailHandler{},
+		&mockResendVerificationHandler{},
+		profileMock,
+		jwtSvc,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp userResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
+
+	assert.Equal(t, "/api/users/me", resp.Self)
+	assert.Equal(t, "User", resp.Kind)
+	assert.Equal(t, "user-123", resp.ID)
+	assert.Equal(t, "alice@example.com", resp.Email)
+	assert.True(t, resp.EmailVerified)
+	assert.Equal(t, now.Format(time.RFC3339), resp.CreatedAt)
+}
+
+func TestHandler_GetProfile_MissingToken(t *testing.T) {
+	jwtSvc := jwt.NewService("test-secret-32-chars-long-enough", "test", "test")
+
+	profileMock := &mockGetProfileHandler{}
+
+	router := setupRouterWithAuth(
+		&mockRegisterHandler{},
+		&mockVerifyEmailHandler{},
+		&mockResendVerificationHandler{},
+		profileMock,
+		jwtSvc,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "application/problem+json")
+
+	var prob response.ProblemDetail
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&prob))
+
+	assert.Equal(t, http.StatusUnauthorized, prob.Status)
+}
+
+func TestHandler_GetProfile_ExpiredToken(t *testing.T) {
+	jwtSvc := jwt.NewService("test-secret-32-chars-long-enough", "test", "test")
+	// Create a token that expired 1 minute ago.
+	expiredToken, err := jwtSvc.CreateToken("user-123", -1*time.Minute)
+	require.NoError(t, err)
+
+	profileMock := &mockGetProfileHandler{}
+
+	router := setupRouterWithAuth(
+		&mockRegisterHandler{},
+		&mockVerifyEmailHandler{},
+		&mockResendVerificationHandler{},
+		profileMock,
+		jwtSvc,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
+	req.Header.Set("Authorization", "Bearer "+expiredToken)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "application/problem+json")
+
+	var prob response.ProblemDetail
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&prob))
+
+	assert.Equal(t, http.StatusUnauthorized, prob.Status)
 }

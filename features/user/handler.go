@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"arsen/pkg/cqrs"
+	"arsen/pkg/jwt"
 	"arsen/pkg/middleware"
 	"arsen/pkg/response"
 )
@@ -44,11 +45,12 @@ type acknowledgmentResponse struct {
 	Message string `json:"message"`
 }
 
-// Handler holds CQRS command buses for user endpoints.
+// Handler holds CQRS command/query buses for user endpoints.
 type Handler struct {
 	registerBus           *cqrs.CommandBus[RegisterCommand, *RegisterResult]
 	verifyEmailBus        *cqrs.CommandBus[VerifyEmailCommand, *VerifyEmailResult]
 	resendVerificationBus *cqrs.CommandBus[ResendVerificationCommand, cqrs.Unit]
+	getProfileBus         *cqrs.QueryBus[GetProfileQuery, *GetProfileResult]
 }
 
 // NewHandler creates a new user Handler.
@@ -56,21 +58,29 @@ func NewHandler(
 	registerBus *cqrs.CommandBus[RegisterCommand, *RegisterResult],
 	verifyEmailBus *cqrs.CommandBus[VerifyEmailCommand, *VerifyEmailResult],
 	resendVerificationBus *cqrs.CommandBus[ResendVerificationCommand, cqrs.Unit],
+	getProfileBus *cqrs.QueryBus[GetProfileQuery, *GetProfileResult],
 ) *Handler {
 	return &Handler{
 		registerBus:           registerBus,
 		verifyEmailBus:        verifyEmailBus,
 		resendVerificationBus: resendVerificationBus,
+		getProfileBus:         getProfileBus,
 	}
 }
 
 // RegisterRoutes mounts user endpoints onto the given router with per-endpoint
 // rate limiting.
-func (h *Handler) RegisterRoutes(r chi.Router) {
+func (h *Handler) RegisterRoutes(r chi.Router, jwtService *jwt.Service) {
 	r.Route("/api/users", func(r chi.Router) {
 		r.With(middleware.RateLimit(10.0/60.0, 20)).Post("/", h.handleRegister)
 		r.With(middleware.RateLimit(10.0/60.0, 20)).Post("/verify", h.handleVerifyEmail)
 		r.With(middleware.RateLimit(5.0/60.0, 10)).Post("/resend-verification", h.handleResendVerification)
+
+		// Protected routes.
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(jwtService))
+			r.Get("/me", h.handleGetProfile)
+		})
 	})
 }
 
@@ -154,4 +164,30 @@ func (h *Handler) handleResendVerification(w http.ResponseWriter, r *http.Reques
 		Kind:    "Acknowledgment",
 		Message: "If an account exists with this email and is not yet verified, a new verification email has been sent.",
 	})
+}
+
+func (h *Handler) handleGetProfile(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		response.Unauthorized(w, r, "Missing or malformed authorization token.")
+		return
+	}
+
+	result, err := h.getProfileBus.Ask(r.Context(), GetProfileQuery{
+		UserID: userID,
+	})
+	if err != nil {
+		response.HandleError(w, r, err)
+		return
+	}
+
+	resp := userResponse{
+		Self:          "/api/users/me",
+		Kind:          "User",
+		ID:            result.User.ID,
+		Email:         result.User.Email,
+		EmailVerified: result.User.EmailVerified,
+		CreatedAt:     result.User.CreatedAt.UTC().Format(time.RFC3339),
+	}
+	response.JSON(w, r, http.StatusOK, resp)
 }

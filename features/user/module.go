@@ -18,12 +18,13 @@ var Module = fx.Module("user",
 		return NewSQLRepository(db)
 	}),
 
-	// Provide command handlers.
+	// Provide command/query handlers.
 	fx.Provide(
 		NewRegisterCommandHandler,
 		NewVerifyEmailCommandHandler,
 		NewResendVerificationCommandHandler,
 		NewWelcomeEmailHandler,
+		NewGetProfileQueryHandler,
 	),
 
 	// Provide the HTTP handler.
@@ -52,6 +53,15 @@ var Module = fx.Module("user",
 		)
 	}),
 
+	// Query bus with middleware.
+	fx.Provide(func(h *GetProfileQueryHandler) *cqrs.QueryBus[GetProfileQuery, *GetProfileResult] {
+		return cqrs.NewQueryBus[GetProfileQuery, *GetProfileResult](h,
+			cqrsmw.Recovery[GetProfileQuery, *GetProfileResult](),
+			cqrsmw.Logging[GetProfileQuery, *GetProfileResult](slog.Default()),
+			cqrsmw.Validation[GetProfileQuery, *GetProfileResult](),
+		)
+	}),
+
 	// Event bus for post-verification events.
 	fx.Provide(func(h *WelcomeEmailHandler) *cqrs.EventBus[EmailVerifiedEvent] {
 		bus := cqrs.NewEventBus[EmailVerifiedEvent]()
@@ -61,6 +71,6 @@ var Module = fx.Module("user",
 
 	// Wire routes into the server.
 	fx.Invoke(func(srv *server.Server, h *Handler) {
-		h.RegisterRoutes(srv.Router)
+		h.RegisterRoutes(srv.Router, srv.JWTService)
 	}),
 )
