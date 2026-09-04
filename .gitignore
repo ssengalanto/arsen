@@ -1,12 +1,3 @@
-# Binaries
-bin/
-*.exe
-*.test
-*.out
-
-# Air tmp
-tmp/
-
 # Environment
 .env
 
@@ -18,15 +9,8 @@ tmp/
 .DS_Store
 Thumbs.db
 
-# Coverage
-coverage.out
-coverage.html
-
-# Vendor (if used)
-vendor/
-
-# Swagger generated docs (committed for Go import to resolve)
-# Regenerate with: task swagger
-
-# Build logs
-build-errors.log
+# Node.js / Next.js
+node_modules/
+.next/
+.turbo/
+out/

@@ -1,0 +1,47 @@
+version: "3"
+
+tasks:
+  dev:
+    desc: Start Next.js dev server
+    cmds:
+      - pnpm dev
+
+  build:
+    desc: Build Next.js production bundle
+    cmds:
+      - pnpm build
+
+  start:
+    desc: Start production server
+    cmds:
+      - pnpm start
+
+  test:
+    desc: Run Vitest
+    cmds:
+      - pnpm test
+
+  test-watch:
+    desc: Run Vitest in watch mode
+    cmds:
+      - pnpm test:watch
+
+  lint:
+    desc: Run ESLint
+    cmds:
+      - pnpm lint
+
+  lint-fix:
+    desc: Run ESLint with auto-fix
+    cmds:
+      - pnpm lint:fix
+
+  format:
+    desc: Run Prettier
+    cmds:
+      - pnpm format
+
+  typecheck:
+    desc: Run TypeScript type checker
+    cmds:
+      - pnpm typecheck

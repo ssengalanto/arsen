@@ -1,0 +1,9 @@
+bin/
+*.exe
+*.test
+*.out
+tmp/
+coverage.out
+coverage.html
+build-errors.log
+vendor/

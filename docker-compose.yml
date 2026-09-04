@@ -1,36 +1,63 @@
 services:
   api-dev:
     build:
-      context: .
+      context: ./apps/api
       target: dev
     profiles: [dev]
     ports:
       - "${SERVER_ADDRESS:-8080}:8080"
     volumes:
-      - .:/app
+      - ./apps/api:/app
       - go-modules:/go/pkg/mod
     env_file:
-      - .env
+      - ./apps/api/.env
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
 
+  web-dev:
+    build:
+      context: ./apps/web
+      target: dev
+    profiles: [dev]
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - node-modules:/app/node_modules
+    env_file:
+      - ./apps/web/.env
+    depends_on:
+      - api-dev
+
   api-prod:
     build:
-      context: .
+      context: ./apps/api
       target: prod
     profiles: [prod]
     ports:
       - "${SERVER_ADDRESS:-8080}:8080"
     env_file:
-      - .env
+      - ./apps/api/.env
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  web-prod:
+    build:
+      context: ./apps/web
+      target: prod
+    profiles: [prod]
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/web/.env
+    depends_on:
+      - api-prod
 
   postgres:
     image: postgres:16-alpine
@@ -64,3 +91,4 @@ volumes:
   postgres-data:
   redis-data:
   go-modules:
+  node-modules:
