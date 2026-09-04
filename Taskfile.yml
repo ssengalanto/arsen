@@ -27,15 +27,10 @@ tasks:
       - task: api:build
       - task: web:build
 
-  dev:
+  docker-up:
     desc: Start full dev stack via Docker Compose
     cmds:
       - docker compose --profile dev up --build
-
-  docker-up:
-    desc: Start production stack
-    cmds:
-      - docker compose --profile prod up --build -d
 
   docker-down:
     desc: Stop all containers and remove volumes

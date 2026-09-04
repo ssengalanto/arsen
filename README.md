@@ -43,21 +43,20 @@ task dev
 ```bash
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
-task dev
+task docker-up
 ```
 
 This starts PostgreSQL, Redis, the API (with hot reload), and the web frontend.
 
 ## Root Commands
 
-| Command          | Description                          |
-|------------------|--------------------------------------|
-| `task test`      | Run all tests (Go + Vitest)          |
-| `task lint`      | Run all linters (golangci-lint + ESLint) |
-| `task build`     | Build both workspaces                |
-| `task dev`       | Start full dev stack via Docker Compose |
-| `task docker-up` | Start production stack (detached)    |
-| `task docker-down` | Stop all containers and remove volumes |
+| Command            | Description                              |
+|--------------------|------------------------------------------|
+| `task test`        | Run all tests (Go + Vitest)              |
+| `task lint`        | Run all linters (golangci-lint + ESLint) |
+| `task build`       | Build both workspaces                    |
+| `task docker-up`   | Start dev stack via Docker Compose       |
+| `task docker-down` | Stop all containers and remove volumes   |
 
 Workspace-specific commands are available via `task api:<command>` and `task web:<command>`. See each workspace's `Taskfile.yml` for details.
 

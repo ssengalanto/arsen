@@ -11,8 +11,7 @@ This is a Go + Next.js monorepo orchestrated by [Task](https://taskfile.dev). Al
 task test          # Run all tests (Go + Vitest)
 task lint          # Run all linters (golangci-lint + ESLint)
 task build         # Build both workspaces
-task dev           # Full stack via Docker Compose (dev profile, hot reload)
-task docker-up     # Production stack (detached)
+task docker-up     # Start dev stack via Docker Compose (hot reload)
 task docker-down   # Stop containers and remove volumes
 ```
 
@@ -109,7 +108,7 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-Docker Compose provides Postgres 16 and Redis 7. `task dev` starts everything with hot reload (Go uses Air, Next.js uses its dev server).
+Docker Compose provides Postgres 16 and Redis 7. `task docker-up` starts everything with hot reload (Go uses Air, Next.js uses its dev server).
 
 ## Testing
 
