@@ -46,29 +46,34 @@ func (c LoginCommand) Validate() error {
 }
 
 type LoginCommandHandler struct {
-	userRepo   user.Repository
-	authRepo   Repository
-	jwtService *jwt.Service
-	cfg        *config.Config
+	userByEmail *cqrs.QueryBus[user.GetUserByEmailQuery, *user.GetUserByEmailResult]
+	authRepo    Repository
+	jwtService  *jwt.Service
+	cfg         *config.Config
 }
 
 func NewLoginCommandHandler(
-	userRepo user.Repository,
+	userByEmail *cqrs.QueryBus[user.GetUserByEmailQuery, *user.GetUserByEmailResult],
 	authRepo Repository,
 	jwtService *jwt.Service,
 	cfg *config.Config,
 ) *LoginCommandHandler {
 	return &LoginCommandHandler{
-		userRepo:   userRepo,
-		authRepo:   authRepo,
-		jwtService: jwtService,
-		cfg:        cfg,
+		userByEmail: userByEmail,
+		authRepo:    authRepo,
+		jwtService:  jwtService,
+		cfg:         cfg,
 	}
 }
 
 func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*LoginResult, error) {
-	// Look up user by email.
-	u, err := h.userRepo.GetByEmail(ctx, cmd.Email)
+	// Look up user by email via the user feature's query bus.
+	result, err := h.userByEmail.Ask(ctx, user.GetUserByEmailQuery{Email: cmd.Email})
+
+	var u *user.User
+	if result != nil {
+		u = result.User
+	}
 
 	var notFound *cqrs.NotFoundError
 	if errors.As(err, &notFound) {

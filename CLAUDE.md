@@ -54,7 +54,7 @@ task web:format       # Prettier
 
 ### API: Vertical Slice + CQRS
 
-Each feature is a self-contained package under `features/` with no cross-feature imports:
+Each feature is a self-contained package under `features/` with no cross-feature repository imports:
 
 ```
 features/auth/
@@ -71,6 +71,8 @@ features/auth/
 3. Register the `fx.Module` in `cmd/api/main.go`
 
 **CQRS buses** (`pkg/cqrs/`) use Go generics: `CommandBus[C, R]` dispatches commands, `QueryBus[Q, R]` dispatches queries. `cqrs.Unit` is the return type for commands with no result. Middleware wraps the handler chain in reverse order.
+
+**Cross-feature data access** — Features never import another feature's repository. Instead, the owning feature exposes a query via its `QueryBus`, and consumers inject the bus. For example, auth needs user data for login, so user exposes `GetUserByEmailQuery` / `GetUserByEmailResult` through `*cqrs.QueryBus[user.GetUserByEmailQuery, *user.GetUserByEmailResult]`. Auth injects this bus — it never touches `user.Repository`. This keeps each slice's data access private and routes all cross-feature reads through the CQRS bus.
 
 ### Dependency Injection (uber/fx)
 

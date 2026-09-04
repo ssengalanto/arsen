@@ -30,6 +30,7 @@ var Module = fx.Module("user",
 		NewResendVerificationCommandHandler,
 		NewWelcomeEmailHandler,
 		NewGetProfileQueryHandler,
+		NewGetUserByEmailQueryHandler,
 		NewForgotPasswordCommandHandler,
 		NewResetPasswordCommandHandler,
 	),
@@ -74,12 +75,19 @@ var Module = fx.Module("user",
 		)
 	}),
 
-	// Query bus with middleware.
+	// Query buses with middleware.
 	fx.Provide(func(h *GetProfileQueryHandler) *cqrs.QueryBus[GetProfileQuery, *GetProfileResult] {
 		return cqrs.NewQueryBus[GetProfileQuery, *GetProfileResult](h,
 			cqrsmw.Recovery[GetProfileQuery, *GetProfileResult](),
 			cqrsmw.Logging[GetProfileQuery, *GetProfileResult](slog.Default()),
 			cqrsmw.Validation[GetProfileQuery, *GetProfileResult](),
+		)
+	}),
+	fx.Provide(func(h *GetUserByEmailQueryHandler) *cqrs.QueryBus[GetUserByEmailQuery, *GetUserByEmailResult] {
+		return cqrs.NewQueryBus[GetUserByEmailQuery, *GetUserByEmailResult](h,
+			cqrsmw.Recovery[GetUserByEmailQuery, *GetUserByEmailResult](),
+			cqrsmw.Logging[GetUserByEmailQuery, *GetUserByEmailResult](slog.Default()),
+			cqrsmw.Validation[GetUserByEmailQuery, *GetUserByEmailResult](),
 		)
 	}),
 

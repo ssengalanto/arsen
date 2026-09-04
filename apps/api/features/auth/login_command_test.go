@@ -18,63 +18,23 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Mock: user.Repository
+// Mock: user.GetUserByEmailQuery handler
 // ---------------------------------------------------------------------------
 
-type mockUserRepo struct {
+type mockUserByEmailHandler struct {
 	users         map[string]*user.User // keyed by email
 	getByEmailErr error
 }
 
-func (m *mockUserRepo) GetByEmail(_ context.Context, email string) (*user.User, error) {
+func (m *mockUserByEmailHandler) Handle(_ context.Context, query user.GetUserByEmailQuery) (*user.GetUserByEmailResult, error) {
 	if m.getByEmailErr != nil {
 		return nil, m.getByEmailErr
 	}
-	u, ok := m.users[email]
+	u, ok := m.users[query.Email]
 	if !ok {
-		return nil, cqrs.NewNotFoundError("User", email)
+		return nil, cqrs.NewNotFoundError("User", query.Email)
 	}
-	return u, nil
-}
-
-func (m *mockUserRepo) Create(_ context.Context, _ *user.User) error {
-	return nil
-}
-
-func (m *mockUserRepo) GetByID(_ context.Context, _ string) (*user.User, error) {
-	return nil, cqrs.NewNotFoundError("User", "id")
-}
-
-func (m *mockUserRepo) UpdateEmailVerified(_ context.Context, _ string, _ bool) error {
-	return nil
-}
-
-func (m *mockUserRepo) UpdatePasswordHash(_ context.Context, _, _ string) error {
-	return nil
-}
-
-func (m *mockUserRepo) CreateVerificationToken(_ context.Context, _ *user.VerificationToken) error {
-	return nil
-}
-
-func (m *mockUserRepo) GetVerificationTokenByHash(_ context.Context, _ []byte) (*user.VerificationToken, error) {
-	return nil, cqrs.NewNotFoundError("VerificationToken", "hash")
-}
-
-func (m *mockUserRepo) InvalidateUserVerificationTokens(_ context.Context, _ string) error {
-	return nil
-}
-
-func (m *mockUserRepo) CreatePasswordResetToken(_ context.Context, _ *user.PasswordResetToken) error {
-	return nil
-}
-
-func (m *mockUserRepo) GetPasswordResetTokenByHash(_ context.Context, _ []byte) (*user.PasswordResetToken, error) {
-	return nil, cqrs.NewNotFoundError("PasswordResetToken", "hash")
-}
-
-func (m *mockUserRepo) InvalidateUserPasswordResetTokens(_ context.Context, _ string) error {
-	return nil
+	return &user.GetUserByEmailResult{User: u}, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +78,7 @@ func (m *mockAuthRepo) RevokeAllUserRefreshTokens(_ context.Context, _ string) e
 // Test setup helper
 // ---------------------------------------------------------------------------
 
-func setupLoginTest(t *testing.T) (*LoginCommandHandler, *mockUserRepo, *mockAuthRepo) {
+func setupLoginTest(t *testing.T) (*LoginCommandHandler, *mockUserByEmailHandler, *mockAuthRepo) {
 	t.Helper()
 
 	cfg := &config.Config{
@@ -131,10 +91,11 @@ func setupLoginTest(t *testing.T) (*LoginCommandHandler, *mockUserRepo, *mockAut
 		},
 	}
 	jwtSvc := jwt.NewService(cfg.JWT.Secret, cfg.JWT.Issuer, cfg.JWT.Audience)
-	userRepo := &mockUserRepo{users: make(map[string]*user.User)}
+	mockHandler := &mockUserByEmailHandler{users: make(map[string]*user.User)}
+	userByEmail := cqrs.NewQueryBus[user.GetUserByEmailQuery, *user.GetUserByEmailResult](mockHandler)
 	authRepo := &mockAuthRepo{}
-	handler := NewLoginCommandHandler(userRepo, authRepo, jwtSvc, cfg)
-	return handler, userRepo, authRepo
+	handler := NewLoginCommandHandler(userByEmail, authRepo, jwtSvc, cfg)
+	return handler, mockHandler, authRepo
 }
 
 func createTestUser(t *testing.T, email, password string, verified bool) *user.User { //nolint:unparam // test helper parameterized for clarity
@@ -156,10 +117,10 @@ func createTestUser(t *testing.T, email, password string, verified bool) *user.U
 // ---------------------------------------------------------------------------
 
 func TestLoginCommandHandler_ValidCredentials(t *testing.T) {
-	handler, userRepo, _ := setupLoginTest(t)
+	handler, userMock, _ := setupLoginTest(t)
 
 	testUser := createTestUser(t, "alice@example.com", "Test123!!", true)
-	userRepo.users[testUser.Email] = testUser
+	userMock.users[testUser.Email] = testUser
 
 	result, err := handler.Handle(context.Background(), LoginCommand{
 		Email:    "alice@example.com",
@@ -174,10 +135,10 @@ func TestLoginCommandHandler_ValidCredentials(t *testing.T) {
 }
 
 func TestLoginCommandHandler_WrongPassword(t *testing.T) {
-	handler, userRepo, _ := setupLoginTest(t)
+	handler, userMock, _ := setupLoginTest(t)
 
 	testUser := createTestUser(t, "alice@example.com", "Test123!!", true)
-	userRepo.users[testUser.Email] = testUser
+	userMock.users[testUser.Email] = testUser
 
 	result, err := handler.Handle(context.Background(), LoginCommand{
 		Email:    "alice@example.com",
@@ -210,10 +171,10 @@ func TestLoginCommandHandler_NonExistentUser(t *testing.T) {
 }
 
 func TestLoginCommandHandler_UnverifiedEmail(t *testing.T) {
-	handler, userRepo, _ := setupLoginTest(t)
+	handler, userMock, _ := setupLoginTest(t)
 
 	testUser := createTestUser(t, "alice@example.com", "Test123!!", false)
-	userRepo.users[testUser.Email] = testUser
+	userMock.users[testUser.Email] = testUser
 
 	result, err := handler.Handle(context.Background(), LoginCommand{
 		Email:    "alice@example.com",
@@ -229,11 +190,11 @@ func TestLoginCommandHandler_UnverifiedEmail(t *testing.T) {
 }
 
 func TestLoginCommandHandler_TimingAntiEnumeration(t *testing.T) {
-	handler, userRepo, _ := setupLoginTest(t)
+	handler, userMock, _ := setupLoginTest(t)
 
 	// Create a real user with bcrypt-hashed password.
 	testUser := createTestUser(t, "alice@example.com", "Test123!!", true)
-	userRepo.users[testUser.Email] = testUser
+	userMock.users[testUser.Email] = testUser
 
 	// Measure time for wrong password (user exists).
 	start1 := time.Now()
@@ -262,10 +223,10 @@ func TestLoginCommandHandler_TimingAntiEnumeration(t *testing.T) {
 }
 
 func TestLoginCommandHandler_RefreshTokenStored(t *testing.T) {
-	handler, userRepo, authRepo := setupLoginTest(t)
+	handler, userMock, authRepo := setupLoginTest(t)
 
 	testUser := createTestUser(t, "alice@example.com", "Test123!!", true)
-	userRepo.users[testUser.Email] = testUser
+	userMock.users[testUser.Email] = testUser
 
 	_, err := handler.Handle(context.Background(), LoginCommand{
 		Email:    "alice@example.com",
