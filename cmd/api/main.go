@@ -4,6 +4,7 @@ import (
 	"go.uber.org/fx"
 
 	"arsen/features/auth"
+	"arsen/features/health"
 	"arsen/features/user"
 	"arsen/pkg/config"
 	"arsen/pkg/database"
@@ -23,5 +24,6 @@ func main() {
 		server.Module,
 		user.Module,
 		auth.Module,
+		health.Module,
 	).Run()
 }

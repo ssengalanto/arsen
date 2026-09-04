@@ -249,14 +249,14 @@
 
 ### Tests
 
-- [ ] T093 [P] [US6] Write tests for ReadinessQuery handler and HTTP handlers in `features/health/handler_test.go` — healthz returns 200 with status ok, readyz returns 200 when DB pings, readyz returns 503 when DB unreachable
+- [x] T093 [P] [US6] Write tests for ReadinessQuery handler and HTTP handlers in `features/health/handler_test.go` — healthz returns 200 with status ok, readyz returns 200 when DB pings, readyz returns 503 when DB unreachable
 
 ### Implementation
 
-- [ ] T094 [US6] Implement ReadinessQuery and ReadinessQueryHandler in `features/health/readiness_query.go` — ping database, return ready/unavailable status
-- [ ] T095 [US6] Implement HTTP handlers for GET /healthz and GET /readyz in `features/health/handler.go` — healthz returns static 200 with self/kind/status, readyz dispatches ReadinessQuery
-- [ ] T096 [US6] Implement fx.Module in `features/health/module.go` — provide handler, wire into router at root level (not under /api/)
-- [ ] T097 [US6] Wire health feature module into `cmd/api/main.go`
+- [x] T094 [US6] Implement ReadinessQuery and ReadinessQueryHandler in `features/health/readiness_query.go` — ping database, return ready/unavailable status
+- [x] T095 [US6] Implement HTTP handlers for GET /healthz and GET /readyz in `features/health/handler.go` — healthz returns static 200 with self/kind/status, readyz dispatches ReadinessQuery
+- [x] T096 [US6] Implement fx.Module in `features/health/module.go` — provide handler, wire into router at root level (not under /api/)
+- [x] T097 [US6] Wire health feature module into `cmd/api/main.go`
 
 **Checkpoint**: `go test ./features/health/...` green. /healthz and /readyz work via curl.
 
