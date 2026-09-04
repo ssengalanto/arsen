@@ -20,14 +20,14 @@
 
 **Purpose**: Project initialization, tooling, and configuration scaffolding
 
-- [ ] T001 Initialize Go module with `go mod init {{MODULE_PATH}}` and create `cmd/api/main.go` entry point stub
-- [ ] T002 [P] Create `Taskfile.yml` with targets: build, test, lint, run, migrate-up, migrate-down, migrate-create, swagger, dev, docker-up, docker-down
-- [ ] T003 [P] Create `Dockerfile` with multi-target build: dev stage (Air hot-reload, debug tools, mounted source) and prod stage (multi-stage, distroless/scratch, statically linked binary, non-root user)
-- [ ] T004 [P] Create `docker-compose.yml` running API + PostgreSQL + Redis with dev/prod profiles
-- [ ] T005 [P] Create `.air.toml` configuration for live reload watching `.go` files
-- [ ] T006 [P] Create `.golangci.yml` with sensible linter set (govet, errcheck, staticcheck, unused, gosimple, ineffassign, typecheck, gocritic)
-- [ ] T007 [P] Create `.env.example` with all required environment variables: DATABASE_URL, REDIS_URL, SERVER_ADDRESS, JWT_SECRET, JWT_ISSUER, JWT_AUDIENCE, ACCESS_TOKEN_DURATION, REFRESH_TOKEN_DURATION, RESEND_API_KEY, EMAIL_FROM_ADDRESS, EMAIL_FROM_NAME, APP_BASE_URL, LOG_LEVEL, ENV
-- [ ] T008 Create directory structure per plan.md: `cmd/api/`, `features/auth/`, `features/user/`, `features/health/`, `pkg/cqrs/`, `pkg/cqrs/middleware/`, `pkg/config/`, `pkg/database/`, `pkg/redis/`, `pkg/email/`, `pkg/token/`, `pkg/server/`, `pkg/middleware/`, `pkg/response/`, `pkg/cleanup/`, `migrations/`
+- [x] T001 Initialize Go module with `go mod init arsen` and create `cmd/api/main.go` entry point stub
+- [x] T002 [P] Create `Taskfile.yml` with targets: build, test, lint, run, migrate-up, migrate-down, migrate-create, swagger, dev, docker-up, docker-down
+- [x] T003 [P] Create `Dockerfile` with multi-target build: dev stage (Air hot-reload, debug tools, mounted source) and prod stage (multi-stage, distroless/scratch, statically linked binary, non-root user)
+- [x] T004 [P] Create `docker-compose.yml` running API + PostgreSQL + Redis with dev/prod profiles
+- [x] T005 [P] Create `.air.toml` configuration for live reload watching `.go` files
+- [x] T006 [P] Create `.golangci.yml` with sensible linter set (govet, errcheck, staticcheck, unused, gosimple, ineffassign, typecheck, gocritic)
+- [x] T007 [P] Create `.env.example` with all required environment variables: DATABASE_URL, REDIS_URL, SERVER_ADDRESS, JWT_SECRET, JWT_ISSUER, JWT_AUDIENCE, ACCESS_TOKEN_DURATION, REFRESH_TOKEN_DURATION, RESEND_API_KEY, EMAIL_FROM_ADDRESS, EMAIL_FROM_NAME, APP_BASE_URL, LOG_LEVEL, ENV
+- [x] T008 Create directory structure per plan.md: `cmd/api/`, `features/auth/`, `features/user/`, `features/health/`, `pkg/cqrs/`, `pkg/cqrs/middleware/`, `pkg/config/`, `pkg/database/`, `pkg/redis/`, `pkg/email/`, `pkg/token/`, `pkg/server/`, `pkg/middleware/`, `pkg/response/`, `pkg/cleanup/`, `migrations/`
 
 **Checkpoint**: Project skeleton compiles (`go build ./...` succeeds with stub main), Docker Compose starts PostgreSQL and Redis, `task lint` runs.
 

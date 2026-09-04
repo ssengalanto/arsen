@@ -1,0 +1,17 @@
+.git/
+.github/
+.claude/
+.specify/
+.idea/
+.vscode/
+specs/
+docs/
+tmp/
+bin/
+*.md
+.env
+.env.*
+!.env.example
+.gitignore
+.dockerignore
+coverage.*
