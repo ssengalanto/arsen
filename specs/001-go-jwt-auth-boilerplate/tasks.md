@@ -41,62 +41,62 @@
 
 ### CQRS Package (pkg/cqrs/) — zero external dependencies
 
-- [ ] T009 Implement `CommandBus[C, R]` and `CommandHandler[C, R]` with `Dispatch(ctx, cmd) (R, error)` in `pkg/cqrs/command.go`. Include `Unit` type alias (`type Unit = struct{}`). Include middleware chain support with reverse-order decoration.
-- [ ] T010 [P] Implement `QueryBus[Q, R]` and `QueryHandler[Q, R]` with `Ask(ctx, query) (R, error)` in `pkg/cqrs/query.go`. Same middleware chain pattern as CommandBus.
-- [ ] T011 [P] Implement `EventBus[E]` and `EventHandler[E]` with sync and async dispatch modes in `pkg/cqrs/event.go`. Support multiple handlers per event type via `Register()`.
-- [ ] T012 [P] Implement domain error types in `pkg/cqrs/errors.go`: `NotFoundError`, `ConflictError`, `ValidationError`, `UnauthorizedError`, `ForbiddenError`. Each carries resource type, identifier, field details. All implement `error` and support `errors.Is`/`errors.As`.
-- [ ] T013 [P] Implement CQRS middleware in `pkg/cqrs/middleware/logging.go` — uses slog, logs type name via `reflect.TypeFor[C]().Name()`, duration, and result
-- [ ] T014 [P] Implement CQRS middleware in `pkg/cqrs/middleware/validation.go` — generic `Validatable` constraint (`interface{ Validate() error }`) checked at compile time
-- [ ] T015 [P] Implement CQRS middleware in `pkg/cqrs/middleware/recovery.go` — converts panics to errors
+- [x] T009 Implement `CommandBus[C, R]` and `CommandHandler[C, R]` with `Dispatch(ctx, cmd) (R, error)` in `pkg/cqrs/command.go`. Include `Unit` type alias (`type Unit = struct{}`). Include middleware chain support with reverse-order decoration.
+- [x] T010 [P] Implement `QueryBus[Q, R]` and `QueryHandler[Q, R]` with `Ask(ctx, query) (R, error)` in `pkg/cqrs/query.go`. Same middleware chain pattern as CommandBus.
+- [x] T011 [P] Implement `EventBus[E]` and `EventHandler[E]` with sync and async dispatch modes in `pkg/cqrs/event.go`. Support multiple handlers per event type via `Register()`.
+- [x] T012 [P] Implement domain error types in `pkg/cqrs/errors.go`: `NotFoundError`, `ConflictError`, `ValidationError`, `UnauthorizedError`, `ForbiddenError`. Each carries resource type, identifier, field details. All implement `error` and support `errors.Is`/`errors.As`.
+- [x] T013 [P] Implement CQRS middleware in `pkg/cqrs/middleware/logging.go` — uses slog, logs type name via `reflect.TypeFor[C]().Name()`, duration, and result
+- [x] T014 [P] Implement CQRS middleware in `pkg/cqrs/middleware/validation.go` — generic `Validatable` constraint (`interface{ Validate() error }`) checked at compile time
+- [x] T015 [P] Implement CQRS middleware in `pkg/cqrs/middleware/recovery.go` — converts panics to errors
 
 ### CQRS Tests
 
-- [ ] T016 [P] Write tests for CommandBus dispatch, middleware chain, and Unit return type in `pkg/cqrs/command_test.go`
-- [ ] T017 [P] Write tests for QueryBus dispatch and middleware chain in `pkg/cqrs/query_test.go`
-- [ ] T018 [P] Write tests for EventBus sync/async dispatch, multiple handlers, error collection in `pkg/cqrs/event_test.go`
-- [ ] T019 [P] Write tests for domain error types (Is/As unwrapping, field details) in `pkg/cqrs/errors_test.go`
-- [ ] T020 [P] Write tests for logging, validation, and recovery middleware in `pkg/cqrs/middleware/middleware_test.go`
+- [x] T016 [P] Write tests for CommandBus dispatch, middleware chain, and Unit return type in `pkg/cqrs/command_test.go`
+- [x] T017 [P] Write tests for QueryBus dispatch and middleware chain in `pkg/cqrs/query_test.go`
+- [x] T018 [P] Write tests for EventBus sync/async dispatch, multiple handlers, error collection in `pkg/cqrs/event_test.go`
+- [x] T019 [P] Write tests for domain error types (Is/As unwrapping, field details) in `pkg/cqrs/errors_test.go`
+- [x] T020 [P] Write tests for logging, validation, and recovery middleware in `pkg/cqrs/middleware/middleware_test.go`
 
 ### Infrastructure Modules
 
-- [ ] T021 Implement Viper-based configuration loading in `pkg/config/config.go` — typed structs for Server, Database, Redis, JWT, Email, RateLimit, Cleanup config. Validate required fields at startup. Refuse to boot if JWT_SECRET or RESEND_API_KEY missing in production mode. Register as fx.Module in `pkg/config/module.go`
-- [ ] T022 [P] Implement PostgreSQL connection via sqlx + pgx/v5 stdlib driver in `pkg/database/database.go`. Include ping health check method. Register as fx.Module with OnStart (connect) and OnStop (close) lifecycle hooks in `pkg/database/module.go`
-- [ ] T023 [P] Implement Redis connection via go-redis/v9 in `pkg/redis/redis.go`. Define cache interface seam (Get, Set, Delete). Register as fx.Module with lifecycle hooks in `pkg/redis/module.go`
-- [ ] T024 [P] Implement email service interface (`EmailSender` with `SendEmail(ctx, to, subject, htmlBody) error`) and Resend implementation in `pkg/email/email.go`. Implement no-op logging sender for dev mode in `pkg/email/noop.go`. Register as fx.Module (select impl based on ENV) in `pkg/email/module.go`
-- [ ] T025 [P] Implement secure random token generation (256-bit) and SHA-256 hashing utilities in `pkg/token/token.go`. Include timing-safe comparison via crypto/subtle.
+- [x] T021 Implement Viper-based configuration loading in `pkg/config/config.go` — typed structs for Server, Database, Redis, JWT, Email, RateLimit, Cleanup config. Validate required fields at startup. Refuse to boot if JWT_SECRET or RESEND_API_KEY missing in production mode. Register as fx.Module in `pkg/config/module.go`
+- [x] T022 [P] Implement PostgreSQL connection via sqlx + pgx/v5 stdlib driver in `pkg/database/database.go`. Include ping health check method. Register as fx.Module with OnStart (connect) and OnStop (close) lifecycle hooks in `pkg/database/module.go`
+- [x] T023 [P] Implement Redis connection via go-redis/v9 in `pkg/redis/redis.go`. Define cache interface seam (Get, Set, Delete). Register as fx.Module with lifecycle hooks in `pkg/redis/module.go`
+- [x] T024 [P] Implement email service interface (`EmailSender` with `SendEmail(ctx, to, subject, htmlBody) error`) and Resend implementation in `pkg/email/email.go`. Implement no-op logging sender for dev mode in `pkg/email/noop.go`. Register as fx.Module (select impl based on ENV) in `pkg/email/module.go`
+- [x] T025 [P] Implement secure random token generation (256-bit) and SHA-256 hashing utilities in `pkg/token/token.go`. Include timing-safe comparison via crypto/subtle.
 
 ### HTTP Infrastructure
 
-- [ ] T026 Implement RFC 9457 problem details response builder in `pkg/response/problem.go` — struct for ProblemDetail with type, title, status, detail, instance, errors fields. Include helper functions for common error types (BadRequest, Unauthorized, Forbidden, NotFound, Conflict, TooManyRequests, InternalError with correlation ID).
-- [ ] T027 [P] Implement JSON response writer in `pkg/response/json.go` — writes JSON with `self` and `kind` properties, camelCase field names, ISO 8601 dates. Include `RespondCreated` helper with Location header.
-- [ ] T028 [P] Implement domain error → RFC 9457 translator in `pkg/response/problem.go` — maps `cqrs.NotFoundError` → 404, `cqrs.ConflictError` → 409, `cqrs.ValidationError` → 400 with field details, `cqrs.UnauthorizedError` → 401, `cqrs.ForbiddenError` → 403.
-- [ ] T029 Implement request ID / correlation ID middleware in `pkg/middleware/requestid.go` — generates UUID, injects into context and slog, sets X-Request-ID response header
-- [ ] T030 [P] Implement structured request logging middleware in `pkg/middleware/logging.go` — uses slog with JSON handler, logs method, path, status, duration, correlation ID. Redacts Authorization headers and token values.
-- [ ] T031 [P] Implement per-IP rate limiter middleware in `pkg/middleware/ratelimit.go` — uses golang.org/x/time/rate token bucket, keyed per IP, configurable rate and burst. Returns 429 with RFC 9457 body.
-- [ ] T032 [P] Implement CORS middleware in `pkg/middleware/cors.go` — configurable origins, methods, headers
-- [ ] T033 [P] Implement JWT auth middleware in `pkg/middleware/auth.go` — validates Bearer token from Authorization header, checks exp/iss/aud claims, injects typed user ID into context using unexported key type. Returns 401 for missing/expired/tampered tokens.
-- [ ] T034 Implement chi router setup and middleware composition in `pkg/server/server.go` — compose request ID, logging, CORS, recovery middleware. Include 405 Method Not Allowed handler with Allow header. Register as fx.Module with OnStart (ListenAndServe) and OnStop (graceful shutdown with configurable grace period) in `pkg/server/module.go`
+- [x] T026 Implement RFC 9457 problem details response builder in `pkg/response/problem.go` — struct for ProblemDetail with type, title, status, detail, instance, errors fields. Include helper functions for common error types (BadRequest, Unauthorized, Forbidden, NotFound, Conflict, TooManyRequests, InternalError with correlation ID).
+- [x] T027 [P] Implement JSON response writer in `pkg/response/json.go` — writes JSON with `self` and `kind` properties, camelCase field names, ISO 8601 dates. Include `RespondCreated` helper with Location header.
+- [x] T028 [P] Implement domain error → RFC 9457 translator in `pkg/response/problem.go` — maps `cqrs.NotFoundError` → 404, `cqrs.ConflictError` → 409, `cqrs.ValidationError` → 400 with field details, `cqrs.UnauthorizedError` → 401, `cqrs.ForbiddenError` → 403.
+- [x] T029 Implement request ID / correlation ID middleware in `pkg/middleware/requestid.go` — generates UUID, injects into context and slog, sets X-Request-ID response header
+- [x] T030 [P] Implement structured request logging middleware in `pkg/middleware/logging.go` — uses slog with JSON handler, logs method, path, status, duration, correlation ID. Redacts Authorization headers and token values.
+- [x] T031 [P] Implement per-IP rate limiter middleware in `pkg/middleware/ratelimit.go` — uses golang.org/x/time/rate token bucket, keyed per IP, configurable rate and burst. Returns 429 with RFC 9457 body.
+- [x] T032 [P] Implement CORS middleware in `pkg/middleware/cors.go` — configurable origins, methods, headers
+- [x] T033 [P] Implement JWT auth middleware in `pkg/middleware/auth.go` — validates Bearer token from Authorization header, checks exp/iss/aud claims, injects typed user ID into context using unexported key type. Returns 401 for missing/expired/tampered tokens.
+- [x] T034 Implement chi router setup and middleware composition in `pkg/server/server.go` — compose request ID, logging, CORS, recovery middleware. Include 405 Method Not Allowed handler with Allow header. Register as fx.Module with OnStart (ListenAndServe) and OnStop (graceful shutdown with configurable grace period) in `pkg/server/module.go`
 
 ### Database Migrations
 
-- [ ] T035 Create migration `migrations/000001_create_users.up.sql` — enable citext extension, create users table (id UUID PK, email citext UNIQUE, password_hash text, email_verified boolean DEFAULT false, created_at timestamptz, updated_at timestamptz)
-- [ ] T036 [P] Create migration `migrations/000001_create_users.down.sql` — drop users table
-- [ ] T037 [P] Create migration `migrations/000002_create_refresh_tokens.up.sql` — create refresh_tokens table with indexes per data-model.md
-- [ ] T038 [P] Create migration `migrations/000002_create_refresh_tokens.down.sql` — drop refresh_tokens table
-- [ ] T039 [P] Create migration `migrations/000003_create_verification_tokens.up.sql` — create verification_tokens table with indexes per data-model.md
-- [ ] T040 [P] Create migration `migrations/000003_create_verification_tokens.down.sql` — drop verification_tokens table
-- [ ] T041 [P] Create migration `migrations/000004_create_password_reset_tokens.up.sql` — create password_reset_tokens table with indexes per data-model.md
-- [ ] T042 [P] Create migration `migrations/000004_create_password_reset_tokens.down.sql` — drop password_reset_tokens table
+- [x] T035 Create migration `migrations/000001_create_users.up.sql` — enable citext extension, create users table (id UUID PK, email citext UNIQUE, password_hash text, email_verified boolean DEFAULT false, created_at timestamptz, updated_at timestamptz)
+- [x] T036 [P] Create migration `migrations/000001_create_users.down.sql` — drop users table
+- [x] T037 [P] Create migration `migrations/000002_create_refresh_tokens.up.sql` — create refresh_tokens table with indexes per data-model.md
+- [x] T038 [P] Create migration `migrations/000002_create_refresh_tokens.down.sql` — drop refresh_tokens table
+- [x] T039 [P] Create migration `migrations/000003_create_verification_tokens.up.sql` — create verification_tokens table with indexes per data-model.md
+- [x] T040 [P] Create migration `migrations/000003_create_verification_tokens.down.sql` — drop verification_tokens table
+- [x] T041 [P] Create migration `migrations/000004_create_password_reset_tokens.up.sql` — create password_reset_tokens table with indexes per data-model.md
+- [x] T042 [P] Create migration `migrations/000004_create_password_reset_tokens.down.sql` — drop password_reset_tokens table
 
 ### Infrastructure Tests
 
-- [ ] T043 [P] Write tests for config validation (missing JWT_SECRET fails, missing RESEND_API_KEY fails in prod, succeeds in dev) in `pkg/config/config_test.go`
-- [ ] T044 [P] Write tests for token generation (256-bit entropy, unique), hashing (SHA-256), and timing-safe comparison in `pkg/token/token_test.go`
-- [ ] T045 [P] Write tests for RFC 9457 problem details builder and domain error translator in `pkg/response/problem_test.go`
-- [ ] T046 [P] Write tests for JSON response writer (self/kind included, camelCase, ISO 8601 dates) in `pkg/response/json_test.go`
-- [ ] T047 [P] Write tests for rate limiter middleware (allows within limit, returns 429 when exceeded) in `pkg/middleware/ratelimit_test.go`
-- [ ] T048 [P] Write tests for JWT auth middleware (valid token passes, missing/expired/tampered rejected, user ID in context) in `pkg/middleware/auth_test.go`
-- [ ] T049 [P] Write tests for email service (Resend mock, no-op sender logs but doesn't send) in `pkg/email/email_test.go`
+- [x] T043 [P] Write tests for config validation (missing JWT_SECRET fails, missing RESEND_API_KEY fails in prod, succeeds in dev) in `pkg/config/config_test.go`
+- [x] T044 [P] Write tests for token generation (256-bit entropy, unique), hashing (SHA-256), and timing-safe comparison in `pkg/token/token_test.go`
+- [x] T045 [P] Write tests for RFC 9457 problem details builder and domain error translator in `pkg/response/problem_test.go`
+- [x] T046 [P] Write tests for JSON response writer (self/kind included, camelCase, ISO 8601 dates) in `pkg/response/json_test.go`
+- [x] T047 [P] Write tests for rate limiter middleware (allows within limit, returns 429 when exceeded) in `pkg/middleware/ratelimit_test.go`
+- [x] T048 [P] Write tests for JWT auth middleware (valid token passes, missing/expired/tampered rejected, user ID in context) in `pkg/middleware/auth_test.go`
+- [x] T049 [P] Write tests for email service (Resend mock, no-op sender logs but doesn't send) in `pkg/email/email_test.go`
 
 **Checkpoint**: All infrastructure compiles, all pkg tests pass. `go test ./pkg/...` green. Migrations apply successfully against Docker PostgreSQL. fx dependency graph resolves. Application boots and shuts down gracefully (no routes yet).
 
