@@ -65,6 +65,18 @@ func (m *mockUserRepo) InvalidateUserVerificationTokens(_ context.Context, _ str
 	return nil
 }
 
+func (m *mockUserRepo) CreatePasswordResetToken(_ context.Context, _ *user.PasswordResetToken) error {
+	return nil
+}
+
+func (m *mockUserRepo) GetPasswordResetTokenByHash(_ context.Context, _ []byte) (*user.PasswordResetToken, error) {
+	return nil, cqrs.NewNotFoundError("PasswordResetToken", "hash")
+}
+
+func (m *mockUserRepo) InvalidateUserPasswordResetTokens(_ context.Context, _ string) error {
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Mock: auth.Repository
 // ---------------------------------------------------------------------------

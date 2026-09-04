@@ -30,6 +30,15 @@ type resendVerificationRequest struct {
 	Email string `json:"email"`
 }
 
+type forgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type resetPasswordRequest struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
 type userResponse struct {
 	Self          string `json:"self"`
 	Kind          string `json:"kind"`
@@ -51,6 +60,8 @@ type Handler struct {
 	verifyEmailBus        *cqrs.CommandBus[VerifyEmailCommand, *VerifyEmailResult]
 	resendVerificationBus *cqrs.CommandBus[ResendVerificationCommand, cqrs.Unit]
 	getProfileBus         *cqrs.QueryBus[GetProfileQuery, *GetProfileResult]
+	forgotPasswordBus     *cqrs.CommandBus[ForgotPasswordCommand, cqrs.Unit]
+	resetPasswordBus      *cqrs.CommandBus[ResetPasswordCommand, cqrs.Unit]
 }
 
 // NewHandler creates a new user Handler.
@@ -59,12 +70,16 @@ func NewHandler(
 	verifyEmailBus *cqrs.CommandBus[VerifyEmailCommand, *VerifyEmailResult],
 	resendVerificationBus *cqrs.CommandBus[ResendVerificationCommand, cqrs.Unit],
 	getProfileBus *cqrs.QueryBus[GetProfileQuery, *GetProfileResult],
+	forgotPasswordBus *cqrs.CommandBus[ForgotPasswordCommand, cqrs.Unit],
+	resetPasswordBus *cqrs.CommandBus[ResetPasswordCommand, cqrs.Unit],
 ) *Handler {
 	return &Handler{
 		registerBus:           registerBus,
 		verifyEmailBus:        verifyEmailBus,
 		resendVerificationBus: resendVerificationBus,
 		getProfileBus:         getProfileBus,
+		forgotPasswordBus:     forgotPasswordBus,
+		resetPasswordBus:      resetPasswordBus,
 	}
 }
 
@@ -75,6 +90,8 @@ func (h *Handler) RegisterRoutes(r chi.Router, jwtService *jwt.Service) {
 		r.With(middleware.RateLimit(10.0/60.0, 20)).Post("/", h.handleRegister)
 		r.With(middleware.RateLimit(10.0/60.0, 20)).Post("/verify", h.handleVerifyEmail)
 		r.With(middleware.RateLimit(5.0/60.0, 10)).Post("/resend-verification", h.handleResendVerification)
+		r.With(middleware.RateLimit(5.0/60.0, 10)).Post("/forgot-password", h.handleForgotPassword)
+		r.With(middleware.RateLimit(10.0/60.0, 20)).Post("/reset-password", h.handleResetPassword)
 
 		// Protected routes.
 		r.Group(func(r chi.Router) {
@@ -190,4 +207,47 @@ func (h *Handler) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:     result.User.CreatedAt.UTC().Format(time.RFC3339),
 	}
 	response.JSON(w, r, http.StatusOK, resp)
+}
+
+func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req forgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w, r, "Invalid request body.", nil)
+		return
+	}
+
+	_, err := h.forgotPasswordBus.Dispatch(r.Context(), ForgotPasswordCommand{
+		Email: req.Email,
+	})
+	if err != nil {
+		// Log the error but always return success to prevent email enumeration.
+		slog.Error("forgot password failed", "error", err.Error())
+	}
+
+	response.JSON(w, r, http.StatusOK, acknowledgmentResponse{
+		Kind:    "Acknowledgment",
+		Message: "If an account exists with this email, a password reset link has been sent.",
+	})
+}
+
+func (h *Handler) handleResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req resetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w, r, "Invalid request body.", nil)
+		return
+	}
+
+	_, err := h.resetPasswordBus.Dispatch(r.Context(), ResetPasswordCommand{
+		Token:    req.Token,
+		Password: req.Password,
+	})
+	if err != nil {
+		response.HandleError(w, r, err)
+		return
+	}
+
+	response.JSON(w, r, http.StatusOK, acknowledgmentResponse{
+		Kind:    "Acknowledgment",
+		Message: "Password has been reset successfully. Please log in with your new password.",
+	})
 }

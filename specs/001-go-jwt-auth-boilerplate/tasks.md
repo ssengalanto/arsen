@@ -225,17 +225,17 @@
 
 ### Tests
 
-- [ ] T085 [P] [US9] Write tests for ForgotPasswordCommand handler in `features/user/forgot_password_command_test.go` — sends reset email for verified user, does NOT send for unverified user, returns same result for non-existent email (no enumeration), invalidates previous reset tokens, rate limiting
-- [ ] T086 [P] [US9] Write tests for ResetPasswordCommand handler in `features/user/reset_password_command_test.go` — valid token resets password (bcrypt hash updated), expired token rejected, used token rejected, weak password rejected with validation errors, all refresh token families revoked
-- [ ] T087 [P] [US9] Write HTTP handler tests for POST /api/users/forgot-password and POST /api/users/reset-password in `features/user/handler_test.go`
+- [x] T085 [P] [US9] Write tests for ForgotPasswordCommand handler in `features/user/forgot_password_command_test.go` — sends reset email for verified user, does NOT send for unverified user, returns same result for non-existent email (no enumeration), invalidates previous reset tokens, rate limiting
+- [x] T086 [P] [US9] Write tests for ResetPasswordCommand handler in `features/user/reset_password_command_test.go` — valid token resets password (bcrypt hash updated), expired token rejected, used token rejected, weak password rejected with validation errors, all refresh token families revoked
+- [x] T087 [P] [US9] Write HTTP handler tests for POST /api/users/forgot-password and POST /api/users/reset-password in `features/user/handler_test.go`
 
 ### Implementation
 
-- [ ] T088 [US9] Add password reset token repository methods to `features/user/repository.go` — CreatePasswordResetToken(ctx, token), GetPasswordResetTokenByHash(ctx, hash), InvalidateUserPasswordResetTokens(ctx, userID)
-- [ ] T089 [US9] Implement ForgotPasswordCommand and ForgotPasswordCommandHandler in `features/user/forgot_password_command.go` — look up user by email, if verified: invalidate previous reset tokens, generate new 256-bit token, store hash (1-hour expiry), send reset email. If unverified or not found: do dummy work for constant timing, return success. Always return same response.
-- [ ] T090 [US9] Implement ResetPasswordCommand and ResetPasswordCommandHandler in `features/user/reset_password_command.go` — hash submitted token, look up in DB, check not expired and not used, validate new password strength, bcrypt hash new password, update user password_hash, mark token used, revoke ALL refresh token families for user (call auth repository), return success. All error cases return identical UnauthorizedError.
-- [ ] T091 [US9] Add POST /api/users/forgot-password and POST /api/users/reset-password routes to user HTTP handler in `features/user/handler.go` — apply rate limiting (5/min forgot, 10/min reset)
-- [ ] T092 [US9] Update user fx.Module in `features/user/module.go` to wire ForgotPasswordCommand and ResetPasswordCommand buses
+- [x] T088 [US9] Add password reset token repository methods to `features/user/repository.go` — CreatePasswordResetToken(ctx, token), GetPasswordResetTokenByHash(ctx, hash), InvalidateUserPasswordResetTokens(ctx, userID)
+- [x] T089 [US9] Implement ForgotPasswordCommand and ForgotPasswordCommandHandler in `features/user/forgot_password_command.go` — look up user by email, if verified: invalidate previous reset tokens, generate new 256-bit token, store hash (1-hour expiry), send reset email. If unverified or not found: do dummy work for constant timing, return success. Always return same response.
+- [x] T090 [US9] Implement ResetPasswordCommand and ResetPasswordCommandHandler in `features/user/reset_password_command.go` — hash submitted token, look up in DB, check not expired and not used, validate new password strength, bcrypt hash new password, update user password_hash, mark token used, revoke ALL refresh token families for user (call auth repository), return success. All error cases return identical UnauthorizedError.
+- [x] T091 [US9] Add POST /api/users/forgot-password and POST /api/users/reset-password routes to user HTTP handler in `features/user/handler.go` — apply rate limiting (5/min forgot, 10/min reset)
+- [x] T092 [US9] Update user fx.Module in `features/user/module.go` to wire ForgotPasswordCommand and ResetPasswordCommand buses
 
 **Checkpoint**: `go test ./features/user/...` green. Forgot-password → reset-password flow works. Old password fails. All refresh tokens revoked. Non-existent email returns identical response.
 

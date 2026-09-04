@@ -18,6 +18,11 @@ var Module = fx.Module("user",
 		return NewSQLRepository(db)
 	}),
 
+	// Provide the refresh token revoker (avoids circular import with auth).
+	fx.Provide(func(db *sqlx.DB) RefreshTokenRevoker {
+		return NewSQLRefreshTokenRevoker(db)
+	}),
+
 	// Provide command/query handlers.
 	fx.Provide(
 		NewRegisterCommandHandler,
@@ -25,6 +30,8 @@ var Module = fx.Module("user",
 		NewResendVerificationCommandHandler,
 		NewWelcomeEmailHandler,
 		NewGetProfileQueryHandler,
+		NewForgotPasswordCommandHandler,
+		NewResetPasswordCommandHandler,
 	),
 
 	// Provide the HTTP handler.
@@ -50,6 +57,20 @@ var Module = fx.Module("user",
 			cqrsmw.Recovery[ResendVerificationCommand, cqrs.Unit](),
 			cqrsmw.Logging[ResendVerificationCommand, cqrs.Unit](slog.Default()),
 			cqrsmw.Validation[ResendVerificationCommand, cqrs.Unit](),
+		)
+	}),
+	fx.Provide(func(h *ForgotPasswordCommandHandler) *cqrs.CommandBus[ForgotPasswordCommand, cqrs.Unit] {
+		return cqrs.NewCommandBus[ForgotPasswordCommand, cqrs.Unit](h,
+			cqrsmw.Recovery[ForgotPasswordCommand, cqrs.Unit](),
+			cqrsmw.Logging[ForgotPasswordCommand, cqrs.Unit](slog.Default()),
+			cqrsmw.Validation[ForgotPasswordCommand, cqrs.Unit](),
+		)
+	}),
+	fx.Provide(func(h *ResetPasswordCommandHandler) *cqrs.CommandBus[ResetPasswordCommand, cqrs.Unit] {
+		return cqrs.NewCommandBus[ResetPasswordCommand, cqrs.Unit](h,
+			cqrsmw.Recovery[ResetPasswordCommand, cqrs.Unit](),
+			cqrsmw.Logging[ResetPasswordCommand, cqrs.Unit](slog.Default()),
+			cqrsmw.Validation[ResetPasswordCommand, cqrs.Unit](),
 		)
 	}),
 

@@ -17,8 +17,10 @@ type mockRepository struct {
 	mu                     sync.Mutex
 	users                  map[string]*User
 	usersByEmail           map[string]*User
-	verificationTokens     map[string]*VerificationToken // keyed by hex(token_hash)
-	invalidatedUserIDs     []string                      // tracks InvalidateUserVerificationTokens calls
+	verificationTokens     map[string]*VerificationToken     // keyed by hex(token_hash)
+	passwordResetTokens    map[string]*PasswordResetToken     // keyed by hex(token_hash)
+	invalidatedUserIDs     []string                           // tracks InvalidateUserVerificationTokens calls
+	invalidatedResetUserIDs []string                          // tracks InvalidateUserPasswordResetTokens calls
 	createErr              error
 	getByEmailErr          error
 	getByIDErr             error
@@ -27,13 +29,17 @@ type mockRepository struct {
 	createTokenErr         error
 	getTokenByHashErr      error
 	invalidateTokensErr    error
+	createResetTokenErr    error
+	getResetTokenByHashErr error
+	invalidateResetTokensErr error
 }
 
 func newMockRepository() *mockRepository {
 	return &mockRepository{
-		users:              make(map[string]*User),
-		usersByEmail:       make(map[string]*User),
-		verificationTokens: make(map[string]*VerificationToken),
+		users:               make(map[string]*User),
+		usersByEmail:        make(map[string]*User),
+		verificationTokens:  make(map[string]*VerificationToken),
+		passwordResetTokens: make(map[string]*PasswordResetToken),
 	}
 }
 
@@ -149,6 +155,52 @@ func (m *mockRepository) InvalidateUserVerificationTokens(_ context.Context, use
 	for _, vt := range m.verificationTokens {
 		if vt.UserID == userID && vt.UsedAt == nil {
 			vt.UsedAt = &now
+		}
+	}
+	return nil
+}
+
+func (m *mockRepository) CreatePasswordResetToken(_ context.Context, prt *PasswordResetToken) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.createResetTokenErr != nil {
+		return m.createResetTokenErr
+	}
+	prt.ID = uuid.New().String()
+	prt.CreatedAt = time.Now()
+	key := hex.EncodeToString(prt.TokenHash)
+	m.passwordResetTokens[key] = prt
+	return nil
+}
+
+func (m *mockRepository) GetPasswordResetTokenByHash(_ context.Context, hash []byte) (*PasswordResetToken, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.getResetTokenByHashErr != nil {
+		return nil, m.getResetTokenByHashErr
+	}
+	key := hex.EncodeToString(hash)
+	prt, ok := m.passwordResetTokens[key]
+	if !ok {
+		return nil, cqrs.NewNotFoundError("PasswordResetToken", "hash")
+	}
+	if prt.UsedAt != nil {
+		return nil, cqrs.NewNotFoundError("PasswordResetToken", "hash")
+	}
+	return prt, nil
+}
+
+func (m *mockRepository) InvalidateUserPasswordResetTokens(_ context.Context, userID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.invalidateResetTokensErr != nil {
+		return m.invalidateResetTokensErr
+	}
+	m.invalidatedResetUserIDs = append(m.invalidatedResetUserIDs, userID)
+	now := time.Now()
+	for _, prt := range m.passwordResetTokens {
+		if prt.UserID == userID && prt.UsedAt == nil {
+			prt.UsedAt = &now
 		}
 	}
 	return nil

@@ -49,6 +49,22 @@ func (m *mockResendVerificationHandler) Handle(_ context.Context, _ ResendVerifi
 	return cqrs.Unit{}, m.err
 }
 
+type mockForgotPasswordHandler struct {
+	err error
+}
+
+func (m *mockForgotPasswordHandler) Handle(_ context.Context, _ ForgotPasswordCommand) (cqrs.Unit, error) {
+	return cqrs.Unit{}, m.err
+}
+
+type mockResetPasswordHandler struct {
+	err error
+}
+
+func (m *mockResetPasswordHandler) Handle(_ context.Context, _ ResetPasswordCommand) (cqrs.Unit, error) {
+	return cqrs.Unit{}, m.err
+}
+
 // ---------------------------------------------------------------------------
 // Helper: build a Handler wired to mock command handlers, mounted on chi.
 // ---------------------------------------------------------------------------
@@ -61,11 +77,13 @@ func setupRouter(
 	registerBus := cqrs.NewCommandBus[RegisterCommand, *RegisterResult](regHandler)
 	verifyBus := cqrs.NewCommandBus[VerifyEmailCommand, *VerifyEmailResult](verifyHandler)
 	resendBus := cqrs.NewCommandBus[ResendVerificationCommand, cqrs.Unit](resendHandler)
-	// Use a no-op profile handler so existing tests compile with the updated NewHandler signature.
+	// Use no-op handlers for buses not exercised by existing tests.
 	profileBus := cqrs.NewQueryBus[GetProfileQuery, *GetProfileResult](&mockGetProfileHandler{})
+	forgotBus := cqrs.NewCommandBus[ForgotPasswordCommand, cqrs.Unit](&mockForgotPasswordHandler{})
+	resetBus := cqrs.NewCommandBus[ResetPasswordCommand, cqrs.Unit](&mockResetPasswordHandler{})
 
 	r := chi.NewRouter()
-	h := NewHandler(registerBus, verifyBus, resendBus, profileBus)
+	h := NewHandler(registerBus, verifyBus, resendBus, profileBus, forgotBus, resetBus)
 	// Pass a JWT service for route registration (existing tests don't hit authenticated routes).
 	jwtSvc := jwt.NewService("test-secret-32-chars-long-enough", "test", "test")
 	h.RegisterRoutes(r, jwtSvc)
@@ -324,9 +342,31 @@ func setupRouterWithAuth(
 	verifyBus := cqrs.NewCommandBus[VerifyEmailCommand, *VerifyEmailResult](verifyHandler)
 	resendBus := cqrs.NewCommandBus[ResendVerificationCommand, cqrs.Unit](resendHandler)
 	profileBus := cqrs.NewQueryBus[GetProfileQuery, *GetProfileResult](profileHandler)
+	forgotBus := cqrs.NewCommandBus[ForgotPasswordCommand, cqrs.Unit](&mockForgotPasswordHandler{})
+	resetBus := cqrs.NewCommandBus[ResetPasswordCommand, cqrs.Unit](&mockResetPasswordHandler{})
 
 	r := chi.NewRouter()
-	h := NewHandler(registerBus, verifyBus, resendBus, profileBus)
+	h := NewHandler(registerBus, verifyBus, resendBus, profileBus, forgotBus, resetBus)
+	h.RegisterRoutes(r, jwtSvc)
+	return r
+}
+
+// setupRouterWithPasswordReset creates a router with custom forgot/reset password mocks
+// and default no-op mocks for the other handlers.
+func setupRouterWithPasswordReset(
+	forgotMock *mockForgotPasswordHandler,
+	resetMock *mockResetPasswordHandler,
+) http.Handler {
+	registerBus := cqrs.NewCommandBus[RegisterCommand, *RegisterResult](&mockRegisterHandler{})
+	verifyBus := cqrs.NewCommandBus[VerifyEmailCommand, *VerifyEmailResult](&mockVerifyEmailHandler{})
+	resendBus := cqrs.NewCommandBus[ResendVerificationCommand, cqrs.Unit](&mockResendVerificationHandler{})
+	profileBus := cqrs.NewQueryBus[GetProfileQuery, *GetProfileResult](&mockGetProfileHandler{})
+	forgotBus := cqrs.NewCommandBus[ForgotPasswordCommand, cqrs.Unit](forgotMock)
+	resetBus := cqrs.NewCommandBus[ResetPasswordCommand, cqrs.Unit](resetMock)
+
+	r := chi.NewRouter()
+	jwtSvc := jwt.NewService("test-secret-32-chars-long-enough", "test", "test")
+	h := NewHandler(registerBus, verifyBus, resendBus, profileBus, forgotBus, resetBus)
 	h.RegisterRoutes(r, jwtSvc)
 	return r
 }
@@ -435,4 +475,127 @@ func TestHandler_GetProfile_ExpiredToken(t *testing.T) {
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&prob))
 
 	assert.Equal(t, http.StatusUnauthorized, prob.Status)
+}
+
+// ---------------------------------------------------------------------------
+// T087: POST /api/users/forgot-password — Forgot password endpoint
+// ---------------------------------------------------------------------------
+
+func TestHandler_ForgotPassword_Success(t *testing.T) {
+	forgotMock := &mockForgotPasswordHandler{}
+
+	router := setupRouterWithPasswordReset(forgotMock, &mockResetPasswordHandler{})
+
+	body := `{"email":"alice@example.com"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/users/forgot-password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp acknowledgmentResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
+
+	assert.Equal(t, "Acknowledgment", resp.Kind)
+	assert.NotEmpty(t, resp.Message)
+}
+
+func TestHandler_ForgotPassword_AlwaysReturns200OnError(t *testing.T) {
+	forgotMock := &mockForgotPasswordHandler{
+		err: fmt.Errorf("some internal error"),
+	}
+
+	router := setupRouterWithPasswordReset(forgotMock, &mockResetPasswordHandler{})
+
+	body := `{"email":"unknown@example.com"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/users/forgot-password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	// Anti-enumeration: always returns 200 even when an error occurs.
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp acknowledgmentResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
+
+	assert.Equal(t, "Acknowledgment", resp.Kind)
+}
+
+// ---------------------------------------------------------------------------
+// T087: POST /api/users/reset-password — Reset password endpoint
+// ---------------------------------------------------------------------------
+
+func TestHandler_ResetPassword_Success(t *testing.T) {
+	resetMock := &mockResetPasswordHandler{}
+
+	router := setupRouterWithPasswordReset(&mockForgotPasswordHandler{}, resetMock)
+
+	body := `{"token":"somevalidtoken","password":"N3w!S3cure"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/users/reset-password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp acknowledgmentResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
+
+	assert.Equal(t, "Acknowledgment", resp.Kind)
+}
+
+func TestHandler_ResetPassword_Unauthorized(t *testing.T) {
+	resetMock := &mockResetPasswordHandler{
+		err: cqrs.NewUnauthorizedError("invalid or expired reset token"),
+	}
+
+	router := setupRouterWithPasswordReset(&mockForgotPasswordHandler{}, resetMock)
+
+	body := `{"token":"badtoken","password":"N3w!S3cure"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/users/reset-password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "application/problem+json")
+
+	var prob response.ProblemDetail
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&prob))
+
+	assert.Equal(t, http.StatusUnauthorized, prob.Status)
+}
+
+func TestHandler_ResetPassword_ValidationError(t *testing.T) {
+	resetMock := &mockResetPasswordHandler{
+		err: cqrs.NewValidationError([]cqrs.FieldError{
+			{Field: "password", Detail: "must be at least 8 characters"},
+			{Field: "password", Detail: "must contain at least 1 uppercase letter"},
+		}),
+	}
+
+	router := setupRouterWithPasswordReset(&mockForgotPasswordHandler{}, resetMock)
+
+	body := `{"token":"x","password":"weak"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/users/reset-password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "application/problem+json")
+
+	var prob response.ProblemDetail
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&prob))
+
+	assert.Equal(t, http.StatusBadRequest, prob.Status)
+	assert.NotEmpty(t, prob.Errors, "expected validation field errors in response")
+	assert.Len(t, prob.Errors, 2)
 }

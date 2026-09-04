@@ -29,6 +29,15 @@ type VerificationToken struct {
 	CreatedAt time.Time  `db:"created_at"`
 }
 
+type PasswordResetToken struct {
+	ID        string     `db:"id"`
+	UserID    string     `db:"user_id"`
+	TokenHash []byte     `db:"token_hash"`
+	ExpiresAt time.Time  `db:"expires_at"`
+	UsedAt    *time.Time `db:"used_at"`
+	CreatedAt time.Time  `db:"created_at"`
+}
+
 type Repository interface {
 	Create(ctx context.Context, user *User) error
 	GetByEmail(ctx context.Context, email string) (*User, error)
@@ -38,6 +47,28 @@ type Repository interface {
 	CreateVerificationToken(ctx context.Context, token *VerificationToken) error
 	GetVerificationTokenByHash(ctx context.Context, hash []byte) (*VerificationToken, error)
 	InvalidateUserVerificationTokens(ctx context.Context, userID string) error
+	CreatePasswordResetToken(ctx context.Context, token *PasswordResetToken) error
+	GetPasswordResetTokenByHash(ctx context.Context, hash []byte) (*PasswordResetToken, error)
+	InvalidateUserPasswordResetTokens(ctx context.Context, userID string) error
+}
+
+// RefreshTokenRevoker abstracts revoking refresh tokens without importing the auth package.
+type RefreshTokenRevoker interface {
+	RevokeAllUserRefreshTokens(ctx context.Context, userID string) error
+}
+
+type sqlRefreshTokenRevoker struct {
+	db *sqlx.DB
+}
+
+// NewSQLRefreshTokenRevoker returns a RefreshTokenRevoker backed by sqlx.
+func NewSQLRefreshTokenRevoker(db *sqlx.DB) RefreshTokenRevoker {
+	return &sqlRefreshTokenRevoker{db: db}
+}
+
+func (r *sqlRefreshTokenRevoker) RevokeAllUserRefreshTokens(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1 AND revoked = false`, userID)
+	return err
 }
 
 type SQLRepository struct {
@@ -119,6 +150,34 @@ func (r *SQLRepository) InvalidateUserVerificationTokens(ctx context.Context, us
 	_, err := r.db.ExecContext(
 		ctx,
 		`UPDATE verification_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`,
+		userID,
+	)
+	return err
+}
+
+func (r *SQLRepository) CreatePasswordResetToken(ctx context.Context, token *PasswordResetToken) error {
+	return r.db.QueryRowxContext(
+		ctx,
+		`INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3) RETURNING id, created_at`,
+		token.UserID, token.TokenHash, token.ExpiresAt,
+	).Scan(&token.ID, &token.CreatedAt)
+}
+
+func (r *SQLRepository) GetPasswordResetTokenByHash(ctx context.Context, hash []byte) (*PasswordResetToken, error) {
+	var prt PasswordResetToken
+	if err := r.db.GetContext(ctx, &prt, `SELECT * FROM password_reset_tokens WHERE token_hash = $1 AND used_at IS NULL`, hash); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, cqrs.NewNotFoundError("PasswordResetToken", "hash")
+		}
+		return nil, err
+	}
+	return &prt, nil
+}
+
+func (r *SQLRepository) InvalidateUserPasswordResetTokens(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`UPDATE password_reset_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`,
 		userID,
 	)
 	return err
