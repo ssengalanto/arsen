@@ -29,14 +29,28 @@ func (m *mockLoginHandler) Handle(_ context.Context, _ LoginCommand) (*LoginResu
 	return m.result, m.err
 }
 
+type mockRefreshHandler struct {
+	result *RefreshTokenResult
+	err    error
+}
+
+func (m *mockRefreshHandler) Handle(_ context.Context, _ RefreshTokenCommand) (*RefreshTokenResult, error) {
+	return m.result, m.err
+}
+
 // ---------------------------------------------------------------------------
-// Helper: build a Handler wired to a mock, mounted on chi.
+// Helper: build a Handler wired to mocks, mounted on chi.
 // ---------------------------------------------------------------------------
 
 func setupAuthRouter(loginMock *mockLoginHandler) http.Handler {
+	return setupAuthRouterWithRefresh(loginMock, &mockRefreshHandler{})
+}
+
+func setupAuthRouterWithRefresh(loginMock *mockLoginHandler, refreshMock *mockRefreshHandler) http.Handler {
 	loginBus := cqrs.NewCommandBus[LoginCommand, *LoginResult](loginMock)
+	refreshBus := cqrs.NewCommandBus[RefreshTokenCommand, *RefreshTokenResult](refreshMock)
 	r := chi.NewRouter()
-	h := NewHandler(loginBus)
+	h := NewHandler(loginBus, refreshBus)
 	h.RegisterRoutes(r)
 	return r
 }
@@ -139,4 +153,62 @@ func TestHandler_Login_InvalidJSON(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, prob.Status)
 	assert.Equal(t, "Invalid request body.", prob.Detail)
+}
+
+// ---------------------------------------------------------------------------
+// T077: POST /api/tokens — Refresh endpoint
+// ---------------------------------------------------------------------------
+
+func TestHandler_Refresh_Success(t *testing.T) {
+	refreshMock := &mockRefreshHandler{
+		result: &RefreshTokenResult{
+			AccessToken:  "new-jwt-token",
+			RefreshToken: "new-refresh-token",
+			ExpiresIn:    900,
+		},
+	}
+
+	router := setupAuthRouterWithRefresh(&mockLoginHandler{}, refreshMock)
+
+	body := `{"refreshToken":"old-refresh-token"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/tokens", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp sessionResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
+
+	assert.Equal(t, "/api/tokens", resp.Self)
+	assert.Equal(t, "TokenPair", resp.Kind)
+	assert.Equal(t, "Bearer", resp.TokenType)
+	assert.Equal(t, "new-jwt-token", resp.AccessToken)
+	assert.Equal(t, "new-refresh-token", resp.RefreshToken)
+	assert.Equal(t, 900, resp.ExpiresIn)
+}
+
+func TestHandler_Refresh_Unauthorized(t *testing.T) {
+	refreshMock := &mockRefreshHandler{
+		err: cqrs.NewUnauthorizedError("invalid or expired refresh token"),
+	}
+
+	router := setupAuthRouterWithRefresh(&mockLoginHandler{}, refreshMock)
+
+	body := `{"refreshToken":"bad-token"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/tokens", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Contains(t, rec.Header().Get("Content-Type"), "application/problem+json")
+
+	var prob response.ProblemDetail
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&prob))
+
+	assert.Equal(t, http.StatusUnauthorized, prob.Status)
 }

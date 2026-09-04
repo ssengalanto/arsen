@@ -18,18 +18,26 @@ var Module = fx.Module("auth",
 		return NewSQLRepository(db)
 	}),
 
-	// Provide the command handler.
+	// Provide the command handlers.
 	fx.Provide(NewLoginCommandHandler),
+	fx.Provide(NewRefreshTokenCommandHandler),
 
 	// Provide the HTTP handler.
 	fx.Provide(NewHandler),
 
-	// Command bus with middleware.
+	// Command buses with middleware.
 	fx.Provide(func(h *LoginCommandHandler) *cqrs.CommandBus[LoginCommand, *LoginResult] {
 		return cqrs.NewCommandBus[LoginCommand, *LoginResult](h,
 			cqrsmw.Recovery[LoginCommand, *LoginResult](),
 			cqrsmw.Logging[LoginCommand, *LoginResult](slog.Default()),
 			cqrsmw.Validation[LoginCommand, *LoginResult](),
+		)
+	}),
+	fx.Provide(func(h *RefreshTokenCommandHandler) *cqrs.CommandBus[RefreshTokenCommand, *RefreshTokenResult] {
+		return cqrs.NewCommandBus[RefreshTokenCommand, *RefreshTokenResult](h,
+			cqrsmw.Recovery[RefreshTokenCommand, *RefreshTokenResult](),
+			cqrsmw.Logging[RefreshTokenCommand, *RefreshTokenResult](slog.Default()),
+			cqrsmw.Validation[RefreshTokenCommand, *RefreshTokenResult](),
 		)
 	}),
 

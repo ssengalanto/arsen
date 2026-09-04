@@ -164,14 +164,14 @@
 
 ### Tests
 
-- [ ] T072 [P] [US3] Write tests for GetProfileQuery handler in `features/user/get_profile_query_test.go` — valid user ID returns profile, non-existent user returns not-found error
-- [ ] T073 [P] [US3] Write HTTP handler tests for GET /api/users/me in `features/user/handler_test.go` — 200 with self/kind/id/email/emailVerified/createdAt, 401 for missing/expired/tampered token
+- [x] T072 [P] [US3] Write tests for GetProfileQuery handler in `features/user/get_profile_query_test.go` — valid user ID returns profile, non-existent user returns not-found error
+- [x] T073 [P] [US3] Write HTTP handler tests for GET /api/users/me in `features/user/handler_test.go` — 200 with self/kind/id/email/emailVerified/createdAt, 401 for missing/expired/tampered token
 
 ### Implementation
 
-- [ ] T074 [US3] Implement GetProfileQuery and GetProfileQueryHandler in `features/user/get_profile_query.go` — extract user ID from context, query repository by ID, return user profile (excluding password_hash)
-- [ ] T075 [US3] Add GET /api/users/me route to user HTTP handler in `features/user/handler.go` — protected by auth middleware, extract user ID from context, dispatch GetProfileQuery, respond with self/kind/id/email/emailVerified/createdAt
-- [ ] T076 [US3] Update user fx.Module in `features/user/module.go` to wire GetProfileQuery bus
+- [x] T074 [US3] Implement GetProfileQuery and GetProfileQueryHandler in `features/user/get_profile_query.go` — extract user ID from context, query repository by ID, return user profile (excluding password_hash)
+- [x] T075 [US3] Add GET /api/users/me route to user HTTP handler in `features/user/handler.go` — protected by auth middleware, extract user ID from context, dispatch GetProfileQuery, respond with self/kind/id/email/emailVerified/createdAt
+- [x] T076 [US3] Update user fx.Module in `features/user/module.go` to wire GetProfileQuery bus
 
 **Checkpoint**: `go test ./features/user/...` green. Full register → verify → login → GET /api/users/me flow works. Auth middleware rejects bad tokens.
 
@@ -185,13 +185,13 @@
 
 ### Tests
 
-- [ ] T077 [P] [US4] Write tests for RefreshTokenCommand handler in `features/auth/refresh_command_test.go` — valid token rotates (new pair returned, old revoked), expired token rejected, already-revoked token triggers family revocation (reuse detection), invalid token rejected, timing-safe comparison used
+- [x] T077 [P] [US4] Write tests for RefreshTokenCommand handler in `features/auth/refresh_command_test.go` — valid token rotates (new pair returned, old revoked), expired token rejected, already-revoked token triggers family revocation (reuse detection), invalid token rejected, timing-safe comparison used
 
 ### Implementation
 
-- [ ] T078 [US4] Implement RefreshTokenCommand and RefreshTokenCommandHandler in `features/auth/refresh_command.go` — hash submitted token, look up in DB via timing-safe comparison, check not expired and not revoked. If revoked (reuse detection): revoke entire family, return UnauthorizedError. If valid: revoke old token, create new refresh token with same family_id, create new access token, return token pair.
-- [ ] T079 [US4] Add POST /api/tokens route to auth HTTP handler in `features/auth/handler.go` — parse refresh token from body, dispatch RefreshTokenCommand, respond with new token pair
-- [ ] T080 [US4] Update auth fx.Module in `features/auth/module.go` to wire RefreshTokenCommand bus
+- [x] T078 [US4] Implement RefreshTokenCommand and RefreshTokenCommandHandler in `features/auth/refresh_command.go` — hash submitted token, look up in DB via timing-safe comparison, check not expired and not revoked. If revoked (reuse detection): revoke entire family, return UnauthorizedError. If valid: revoke old token, create new refresh token with same family_id, create new access token, return token pair.
+- [x] T079 [US4] Add POST /api/tokens route to auth HTTP handler in `features/auth/handler.go` — parse refresh token from body, dispatch RefreshTokenCommand, respond with new token pair
+- [x] T080 [US4] Update auth fx.Module in `features/auth/module.go` to wire RefreshTokenCommand bus
 
 **Checkpoint**: `go test ./features/auth/...` green. Login → refresh → get new tokens. Old token fails. Replayed rotated token revokes family.
 
