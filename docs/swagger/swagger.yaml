@@ -1,0 +1,430 @@
+basePath: /
+definitions:
+  auth.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  auth.refreshRequest:
+    properties:
+      refreshToken:
+        type: string
+    type: object
+  auth.sessionResponse:
+    properties:
+      accessToken:
+        type: string
+      expiresIn:
+        type: integer
+      kind:
+        type: string
+      refreshToken:
+        type: string
+      self:
+        type: string
+      tokenType:
+        type: string
+    type: object
+  health.healthResponse:
+    properties:
+      kind:
+        type: string
+      self:
+        type: string
+      status:
+        type: string
+    type: object
+  health.readinessResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      kind:
+        type: string
+      self:
+        type: string
+      status:
+        type: string
+    type: object
+  response.FieldError:
+    properties:
+      detail:
+        type: string
+      field:
+        type: string
+    type: object
+  response.ProblemDetail:
+    properties:
+      detail:
+        type: string
+      errors:
+        items:
+          $ref: '#/definitions/response.FieldError'
+        type: array
+      instance:
+        type: string
+      status:
+        type: integer
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  user.acknowledgmentResponse:
+    properties:
+      kind:
+        type: string
+      message:
+        type: string
+    type: object
+  user.forgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  user.registerRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  user.resendVerificationRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  user.resetPasswordRequest:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  user.userResponse:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      emailVerified:
+        type: boolean
+      id:
+        type: string
+      kind:
+        type: string
+      message:
+        type: string
+      self:
+        type: string
+    type: object
+  user.verifyRequest:
+    properties:
+      token:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Go backend boilerplate with JWT authentication, CQRS, and vertical
+    slice architecture.
+  title: Arsen API
+  version: "1.0"
+paths:
+  /api/sessions:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with email and password, returns access and
+        refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.sessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      summary: Login
+      tags:
+      - auth
+  /api/sessions/current:
+    delete:
+      description: Revokes all refresh tokens for the authenticated user
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      security:
+      - BearerAuth: []
+      summary: Logout
+      tags:
+      - auth
+  /api/tokens:
+    post:
+      consumes:
+      - application/json
+      description: Exchanges a valid refresh token for new access and refresh tokens
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.refreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.sessionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      summary: Refresh tokens
+      tags:
+      - auth
+  /api/users:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account and sends verification email
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/user.userResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      summary: Register
+      tags:
+      - users
+  /api/users/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset email (always returns 200 for anti-enumeration)
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.forgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.acknowledgmentResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      summary: Forgot password
+      tags:
+      - users
+  /api/users/me:
+    get:
+      description: Returns the authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.userResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      security:
+      - BearerAuth: []
+      summary: Get profile
+      tags:
+      - users
+  /api/users/resend-verification:
+    post:
+      consumes:
+      - application/json
+      description: Resends a verification email (always returns 200 for anti-enumeration)
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.resendVerificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.acknowledgmentResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      summary: Resend verification email
+      tags:
+      - users
+  /api/users/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Resets the user's password using a reset token
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.resetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.acknowledgmentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      summary: Reset password
+      tags:
+      - users
+  /api/users/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies a user's email address using a verification token
+      parameters:
+      - description: Verification token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.verifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.userResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.ProblemDetail'
+      summary: Verify email
+      tags:
+      - users
+  /healthz:
+    get:
+      description: Returns 200 if the server process is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/health.healthResponse'
+      summary: Liveness check
+      tags:
+      - health
+  /readyz:
+    get:
+      description: Returns 200 if the server is ready to serve traffic (database is
+        reachable)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/health.readinessResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/health.readinessResponse'
+      summary: Readiness check
+      tags:
+      - health
+securityDefinitions:
+  BearerAuth:
+    description: Enter "Bearer {token}" (with quotes removed)
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: Authentication endpoints (login, token refresh, logout)
+  name: auth
+- description: User management endpoints (register, verify, profile, password reset)
+  name: users
+- description: Health and readiness check endpoints
+  name: health

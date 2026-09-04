@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 
 	"arsen/pkg/config"
 	"arsen/pkg/jwt"
@@ -29,6 +30,13 @@ func New(cfg *config.Config, jwtService *jwt.Service) *Server {
 	r.Use(middleware.Logging)
 	r.Use(chimiddleware.Recoverer)
 	r.Use(middleware.CORS([]string{"*"})) // TODO: make configurable per environment
+
+	// Serve Swagger UI in non-production environments.
+	if cfg.Env != "prod" {
+		r.Get("/swagger/*", httpSwagger.Handler(
+			httpSwagger.URL("/swagger/doc.json"),
+		))
+	}
 
 	// RFC 9457 problem detail for unmatched routes / methods.
 	r.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

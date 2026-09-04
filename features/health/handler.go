@@ -35,6 +35,12 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/readyz", h.handleReadiness)
 }
 
+// @Summary Liveness check
+// @Description Returns 200 if the server process is running
+// @Tags health
+// @Produce json
+// @Success 200 {object} healthResponse
+// @Router /healthz [get]
 func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, r, http.StatusOK, healthResponse{
 		Self:   "/healthz",
@@ -43,6 +49,13 @@ func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// @Summary Readiness check
+// @Description Returns 200 if the server is ready to serve traffic (database is reachable)
+// @Tags health
+// @Produce json
+// @Success 200 {object} readinessResponse
+// @Failure 503 {object} readinessResponse
+// @Router /readyz [get]
 func (h *Handler) handleReadiness(w http.ResponseWriter, r *http.Request) {
 	result, err := h.readinessBus.Ask(r.Context(), ReadinessQuery{})
 	if err != nil {

@@ -270,9 +270,9 @@
 
 ### Implementation
 
-- [ ] T098 [US7] Create `README.md` with: project overview, prerequisites (Docker, Task, Go), quick start (clone, cp .env.example .env, task dev or docker compose up), curl examples covering full register → verify → login → profile flow, architecture overview, project structure, development workflow (task targets), testing instructions
-- [ ] T099 [US7] Configure Swagger annotations on all HTTP handlers and generate OpenAPI spec via swaggo/swag. Serve Swagger UI at /swagger/ in dev mode via swaggo/http-swagger. Add `swagger` target to Taskfile.yml.
-- [ ] T100 [US7] Implement background token cleanup goroutine in `pkg/cleanup/cleanup.go` — periodically purge expired/revoked refresh tokens, expired/used verification tokens, expired/used password reset tokens. Configurable interval (default: hourly). Respect graceful shutdown. Register as fx.Module with lifecycle hooks in `pkg/cleanup/module.go`. Wire into `cmd/api/main.go`.
+- [x] T098 [US7] Create `README.md` with: project overview, prerequisites (Docker, Task, Go), quick start (clone, cp .env.example .env, task dev or docker compose up), curl examples covering full register → verify → login → profile flow, architecture overview, project structure, development workflow (task targets), testing instructions
+- [x] T099 [US7] Configure Swagger annotations on all HTTP handlers and generate OpenAPI spec via swaggo/swag. Serve Swagger UI at /swagger/ in dev mode via swaggo/http-swagger. Add `swagger` target to Taskfile.yml.
+- [x] T100 [US7] Implement background token cleanup goroutine in `pkg/cleanup/cleanup.go` — periodically purge expired/revoked refresh tokens, expired/used verification tokens, expired/used password reset tokens. Configurable interval (default: hourly). Respect graceful shutdown. Register as fx.Module with lifecycle hooks in `pkg/cleanup/module.go`. Wire into `cmd/api/main.go`.
 
 **Checkpoint**: `docker compose up` starts everything. README curl examples work end-to-end. Swagger UI accessible at /swagger/. Token cleanup runs on schedule.
 

@@ -25,8 +25,8 @@ coverage.html
 # Vendor (if used)
 vendor/
 
-# Swagger generated docs
-docs/swagger/
+# Swagger generated docs (committed for Go import to resolve)
+# Regenerate with: task swagger
 
 # Build logs
 build-errors.log

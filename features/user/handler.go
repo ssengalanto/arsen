@@ -101,6 +101,16 @@ func (h *Handler) RegisterRoutes(r chi.Router, jwtService *jwt.Service) {
 	})
 }
 
+// @Summary Register
+// @Description Creates a new user account and sends verification email
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body registerRequest true "Registration details"
+// @Success 201 {object} userResponse
+// @Failure 400 {object} response.ProblemDetail
+// @Failure 429 {object} response.ProblemDetail
+// @Router /api/users [post]
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -135,6 +145,16 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	response.Created(w, r, "/api/users/"+result.User.ID, userResp)
 }
 
+// @Summary Verify email
+// @Description Verifies a user's email address using a verification token
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body verifyRequest true "Verification token"
+// @Success 200 {object} userResponse
+// @Failure 401 {object} response.ProblemDetail
+// @Failure 429 {object} response.ProblemDetail
+// @Router /api/users/verify [post]
 func (h *Handler) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var req verifyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -162,6 +182,15 @@ func (h *Handler) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, r, http.StatusOK, userResp)
 }
 
+// @Summary Resend verification email
+// @Description Resends a verification email (always returns 200 for anti-enumeration)
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body resendVerificationRequest true "Email address"
+// @Success 200 {object} acknowledgmentResponse
+// @Failure 429 {object} response.ProblemDetail
+// @Router /api/users/resend-verification [post]
 func (h *Handler) handleResendVerification(w http.ResponseWriter, r *http.Request) {
 	var req resendVerificationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -183,6 +212,14 @@ func (h *Handler) handleResendVerification(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// @Summary Get profile
+// @Description Returns the authenticated user's profile
+// @Tags users
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} userResponse
+// @Failure 401 {object} response.ProblemDetail
+// @Router /api/users/me [get]
 func (h *Handler) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
@@ -209,6 +246,15 @@ func (h *Handler) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, r, http.StatusOK, resp)
 }
 
+// @Summary Forgot password
+// @Description Sends a password reset email (always returns 200 for anti-enumeration)
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body forgotPasswordRequest true "Email address"
+// @Success 200 {object} acknowledgmentResponse
+// @Failure 429 {object} response.ProblemDetail
+// @Router /api/users/forgot-password [post]
 func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req forgotPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -230,6 +276,17 @@ func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// @Summary Reset password
+// @Description Resets the user's password using a reset token
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body resetPasswordRequest true "Reset token and new password"
+// @Success 200 {object} acknowledgmentResponse
+// @Failure 400 {object} response.ProblemDetail
+// @Failure 401 {object} response.ProblemDetail
+// @Failure 429 {object} response.ProblemDetail
+// @Router /api/users/reset-password [post]
 func (h *Handler) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	var req resetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

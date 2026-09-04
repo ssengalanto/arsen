@@ -54,6 +54,18 @@ func (h *Handler) RegisterRoutes(r chi.Router, jwtService *jwt.Service) {
 	r.With(middleware.Auth(jwtService)).Delete("/api/sessions/current", h.handleLogout)
 }
 
+// @Summary Login
+// @Description Authenticates a user with email and password, returns access and refresh tokens
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body loginRequest true "Login credentials"
+// @Success 200 {object} sessionResponse
+// @Failure 400 {object} response.ProblemDetail
+// @Failure 401 {object} response.ProblemDetail
+// @Failure 403 {object} response.ProblemDetail
+// @Failure 429 {object} response.ProblemDetail
+// @Router /api/sessions [post]
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -81,6 +93,16 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, r, http.StatusOK, sessionResp)
 }
 
+// @Summary Refresh tokens
+// @Description Exchanges a valid refresh token for new access and refresh tokens
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body refreshRequest true "Refresh token"
+// @Success 200 {object} sessionResponse
+// @Failure 401 {object} response.ProblemDetail
+// @Failure 429 {object} response.ProblemDetail
+// @Router /api/tokens [post]
 func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	var req refreshRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -107,6 +129,13 @@ func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, r, http.StatusOK, resp)
 }
 
+// @Summary Logout
+// @Description Revokes all refresh tokens for the authenticated user
+// @Tags auth
+// @Security BearerAuth
+// @Success 204 "No Content"
+// @Failure 401 {object} response.ProblemDetail
+// @Router /api/sessions/current [delete]
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
