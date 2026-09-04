@@ -118,7 +118,7 @@ func (r *SQLRepository) UpdateEmailVerified(ctx context.Context, id string, veri
 	return err
 }
 
-func (r *SQLRepository) UpdatePasswordHash(ctx context.Context, id string, hash string) error {
+func (r *SQLRepository) UpdatePasswordHash(ctx context.Context, id, hash string) error {
 	_, err := r.db.ExecContext(
 		ctx,
 		`UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1`,

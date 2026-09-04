@@ -14,23 +14,23 @@ import (
 
 // mockRepository implements Repository for testing.
 type mockRepository struct {
-	mu                     sync.Mutex
-	users                  map[string]*User
-	usersByEmail           map[string]*User
-	verificationTokens     map[string]*VerificationToken     // keyed by hex(token_hash)
-	passwordResetTokens    map[string]*PasswordResetToken     // keyed by hex(token_hash)
-	invalidatedUserIDs     []string                           // tracks InvalidateUserVerificationTokens calls
-	invalidatedResetUserIDs []string                          // tracks InvalidateUserPasswordResetTokens calls
-	createErr              error
-	getByEmailErr          error
-	getByIDErr             error
-	updateEmailVerifiedErr error
-	updatePasswordHashErr  error
-	createTokenErr         error
-	getTokenByHashErr      error
-	invalidateTokensErr    error
-	createResetTokenErr    error
-	getResetTokenByHashErr error
+	mu                       sync.Mutex
+	users                    map[string]*User
+	usersByEmail             map[string]*User
+	verificationTokens       map[string]*VerificationToken  // keyed by hex(token_hash)
+	passwordResetTokens      map[string]*PasswordResetToken // keyed by hex(token_hash)
+	invalidatedUserIDs       []string                       // tracks InvalidateUserVerificationTokens calls
+	invalidatedResetUserIDs  []string                       // tracks InvalidateUserPasswordResetTokens calls
+	createErr                error
+	getByEmailErr            error
+	getByIDErr               error
+	updateEmailVerifiedErr   error
+	updatePasswordHashErr    error
+	createTokenErr           error
+	getTokenByHashErr        error
+	invalidateTokensErr      error
+	createResetTokenErr      error
+	getResetTokenByHashErr   error
 	invalidateResetTokensErr error
 }
 
@@ -99,7 +99,7 @@ func (m *mockRepository) UpdateEmailVerified(_ context.Context, id string, verif
 	return nil
 }
 
-func (m *mockRepository) UpdatePasswordHash(_ context.Context, id string, hash string) error {
+func (m *mockRepository) UpdatePasswordHash(_ context.Context, id, hash string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.updatePasswordHashErr != nil {

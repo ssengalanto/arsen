@@ -158,6 +158,42 @@ func TestHandler_Register_ValidationError(t *testing.T) {
 	assert.Len(t, prob.Errors, 2)
 }
 
+// ---------------------------------------------------------------------------
+// T105: JSON schema validation — Register response
+// ---------------------------------------------------------------------------
+
+func TestHandler_Register_ResponseSchema(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	regMock := &mockRegisterHandler{
+		result: &RegisterResult{
+			User: &User{ID: "test-id", Email: "a@b.com", CreatedAt: now},
+		},
+	}
+	router := setupRouter(regMock, &mockVerifyEmailHandler{}, &mockResendVerificationHandler{})
+
+	body := `{"email":"a@b.com","password":"Test123!!"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/users", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	var raw map[string]interface{}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&raw))
+
+	assert.Contains(t, raw, "self")
+	assert.Contains(t, raw, "kind")
+	assert.Equal(t, "User", raw["kind"])
+	// Verify camelCase
+	for key := range raw {
+		assert.NotContains(t, key, "_", "response key %q should be camelCase", key)
+	}
+	// Verify createdAt is ISO 8601
+	createdAt, ok := raw["createdAt"].(string)
+	require.True(t, ok)
+	_, err := time.Parse(time.RFC3339, createdAt)
+	assert.NoError(t, err, "createdAt should be ISO 8601")
+}
+
 func TestHandler_Register_ConflictNormalizedTo400(t *testing.T) {
 	regMock := &mockRegisterHandler{
 		err: cqrs.NewConflictError("User", "alice@example.com", "email already registered"),
@@ -400,7 +436,7 @@ func TestHandler_GetProfile_Success(t *testing.T) {
 		jwtSvc,
 	)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/users/me", http.NoBody)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	rec := httptest.NewRecorder()
 
@@ -432,7 +468,7 @@ func TestHandler_GetProfile_MissingToken(t *testing.T) {
 		jwtSvc,
 	)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/users/me", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	router.ServeHTTP(rec, req)
@@ -462,7 +498,7 @@ func TestHandler_GetProfile_ExpiredToken(t *testing.T) {
 		jwtSvc,
 	)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/users/me", http.NoBody)
 	req.Header.Set("Authorization", "Bearer "+expiredToken)
 	rec := httptest.NewRecorder()
 

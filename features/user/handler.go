@@ -118,10 +118,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.registerBus.Dispatch(r.Context(), RegisterCommand{
-		Email:    req.Email,
-		Password: req.Password,
-	})
+	result, err := h.registerBus.Dispatch(r.Context(), RegisterCommand(req))
 	if err != nil {
 		// Normalize ConflictError to BadRequest to prevent email enumeration.
 		var conflictErr *cqrs.ConflictError
@@ -162,9 +159,7 @@ func (h *Handler) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.verifyEmailBus.Dispatch(r.Context(), VerifyEmailCommand{
-		Token: req.Token,
-	})
+	result, err := h.verifyEmailBus.Dispatch(r.Context(), VerifyEmailCommand(req))
 	if err != nil {
 		response.HandleError(w, r, err)
 		return
@@ -198,9 +193,7 @@ func (h *Handler) handleResendVerification(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err := h.resendVerificationBus.Dispatch(r.Context(), ResendVerificationCommand{
-		Email: req.Email,
-	})
+	_, err := h.resendVerificationBus.Dispatch(r.Context(), ResendVerificationCommand(req))
 	if err != nil {
 		// Log the error but always return success to prevent email enumeration.
 		slog.Error("resend verification failed", "error", err.Error())
@@ -262,9 +255,7 @@ func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.forgotPasswordBus.Dispatch(r.Context(), ForgotPasswordCommand{
-		Email: req.Email,
-	})
+	_, err := h.forgotPasswordBus.Dispatch(r.Context(), ForgotPasswordCommand(req))
 	if err != nil {
 		// Log the error but always return success to prevent email enumeration.
 		slog.Error("forgot password failed", "error", err.Error())
@@ -294,10 +285,7 @@ func (h *Handler) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.resetPasswordBus.Dispatch(r.Context(), ResetPasswordCommand{
-		Token:    req.Token,
-		Password: req.Password,
-	})
+	_, err := h.resetPasswordBus.Dispatch(r.Context(), ResetPasswordCommand(req))
 	if err != nil {
 		response.HandleError(w, r, err)
 		return

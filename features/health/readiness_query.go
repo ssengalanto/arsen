@@ -25,7 +25,7 @@ func NewReadinessQueryHandler(db *sqlx.DB) *ReadinessQueryHandler {
 
 func (h *ReadinessQueryHandler) Handle(ctx context.Context, _ ReadinessQuery) (*ReadinessResult, error) {
 	if err := h.db.PingContext(ctx); err != nil {
-		return &ReadinessResult{Ready: false, Database: "unreachable"}, nil
+		return &ReadinessResult{Ready: false, Database: "unreachable"}, nil //nolint:nilerr // degraded readiness, not a handler error
 	}
 	return &ReadinessResult{Ready: true, Database: "reachable"}, nil
 }

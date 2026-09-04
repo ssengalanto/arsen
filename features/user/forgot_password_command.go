@@ -73,7 +73,7 @@ func (h *ForgotPasswordCommandHandler) Handle(ctx context.Context, cmd ForgotPas
 
 	// Send reset email.
 	resetURL := h.cfg.AppBaseURL + "/api/users/reset-password?token=" + rawToken
-	html := fmt.Sprintf(
+	html := fmt.Sprintf( //nolint:gocritic // HTML template uses quoted URL, not Go quoting
 		`<p>You requested a password reset. Click the link below to set a new password:</p><p><a href="%s">Reset Password</a></p><p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>`,
 		resetURL,
 	)

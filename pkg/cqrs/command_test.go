@@ -92,8 +92,6 @@ func TestCommandBus_MiddlewareAppliedInCorrectOrder(t *testing.T) {
 }
 
 func TestCommandBus_UnitReturnType(t *testing.T) {
-	type unitHandler struct{}
-
 	bus := cqrs.NewCommandBus[testCommand, cqrs.Unit](&unitCommandHandler{})
 	result, err := bus.Dispatch(context.Background(), testCommand{Value: "fire-and-forget"})
 

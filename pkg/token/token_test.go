@@ -37,9 +37,9 @@ func TestHash_ConsistentWithGenerate(t *testing.T) {
 
 func TestCompare(t *testing.T) {
 	tests := []struct {
-		name    string
-		match   bool
-		setup   func(t *testing.T) (raw string, hash []byte)
+		name  string
+		match bool
+		setup func(t *testing.T) (raw string, hash []byte)
 	}{
 		{
 			name:  "returns true for matching token",

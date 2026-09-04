@@ -282,13 +282,13 @@
 
 **Purpose**: Security hardening, log redaction verification, and final integration validation
 
-- [ ] T101 [P] Implement log redaction tests — verify no passwords, tokens (access, refresh, verification, reset), email content, or full Authorization headers appear in log output. Write in `pkg/middleware/logging_test.go` and `pkg/email/email_test.go`.
-- [ ] T102 [P] Implement anti-enumeration timing tests — verify login with non-existent user and wrong password take comparable time (within 100ms). Write in `features/auth/handler_test.go`.
-- [ ] T103 [P] Implement 405 Method Not Allowed tests — verify all defined endpoints return 405 with Allow header for unsupported methods. Write in `pkg/server/server_test.go`.
-- [ ] T104 Write end-to-end integration test covering the complete flow: register → verify email → login → access profile → refresh token → logout → verify refresh revoked → forgot password → reset password → login with new password. Write in `tests/integration/auth_flow_test.go`.
-- [ ] T105 [P] Verify all JSON responses include `self` and `kind` properties, use camelCase, and use ISO 8601 dates — add schema validation assertions to existing handler tests
-- [ ] T106 [P] Verify config startup validation — test that app refuses to boot with missing JWT_SECRET, missing RESEND_API_KEY in prod, known insecure defaults. Write in `pkg/config/config_test.go` (extend T043).
-- [ ] T107 Run `task lint` and fix all golangci-lint issues across the entire codebase
+- [x] T101 [P] Implement log redaction tests — verify no passwords, tokens (access, refresh, verification, reset), email content, or full Authorization headers appear in log output. Write in `pkg/middleware/logging_test.go` and `pkg/email/email_test.go`.
+- [x] T102 [P] Implement anti-enumeration timing tests — verify login with non-existent user and wrong password take comparable time (within 100ms). Write in `features/auth/handler_test.go`.
+- [x] T103 [P] Implement 405 Method Not Allowed tests — verify all defined endpoints return 405 with Allow header for unsupported methods. Write in `pkg/server/server_test.go`.
+- [x] T104 Write end-to-end integration test covering the complete flow: register → verify email → login → access profile → refresh token → logout → verify refresh revoked → forgot password → reset password → login with new password. Write in `tests/integration/auth_flow_test.go`.
+- [x] T105 [P] Verify all JSON responses include `self` and `kind` properties, use camelCase, and use ISO 8601 dates — add schema validation assertions to existing handler tests
+- [x] T106 [P] Verify config startup validation — test that app refuses to boot with missing JWT_SECRET, missing RESEND_API_KEY in prod, known insecure defaults. Write in `pkg/config/config_test.go` (extend T043).
+- [x] T107 Run `task lint` and fix all golangci-lint issues across the entire codebase
 - [ ] T108 Run full quickstart.md validation scenarios manually against running Docker stack — verify all 7 scenarios pass
 
 **Checkpoint**: All tests pass (`go test ./...`). Lint clean. Quickstart validated. Application is production-ready.

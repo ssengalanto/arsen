@@ -22,7 +22,7 @@ import (
 // ---------------------------------------------------------------------------
 
 type mockUserRepo struct {
-	users        map[string]*user.User // keyed by email
+	users         map[string]*user.User // keyed by email
 	getByEmailErr error
 }
 
@@ -49,7 +49,7 @@ func (m *mockUserRepo) UpdateEmailVerified(_ context.Context, _ string, _ bool) 
 	return nil
 }
 
-func (m *mockUserRepo) UpdatePasswordHash(_ context.Context, _ string, _ string) error {
+func (m *mockUserRepo) UpdatePasswordHash(_ context.Context, _, _ string) error {
 	return nil
 }
 
@@ -137,7 +137,7 @@ func setupLoginTest(t *testing.T) (*LoginCommandHandler, *mockUserRepo, *mockAut
 	return handler, userRepo, authRepo
 }
 
-func createTestUser(t *testing.T, email, password string, verified bool) *user.User {
+func createTestUser(t *testing.T, email, password string, verified bool) *user.User { //nolint:unparam // test helper parameterized for clarity
 	t.Helper()
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	require.NoError(t, err)
@@ -226,6 +226,39 @@ func TestLoginCommandHandler_UnverifiedEmail(t *testing.T) {
 	var forbiddenErr *cqrs.ForbiddenError
 	require.True(t, errors.As(err, &forbiddenErr), "expected ForbiddenError, got %T: %v", err, err)
 	assert.Contains(t, forbiddenErr.Detail, "verify your email")
+}
+
+func TestLoginCommandHandler_TimingAntiEnumeration(t *testing.T) {
+	handler, userRepo, _ := setupLoginTest(t)
+
+	// Create a real user with bcrypt-hashed password.
+	testUser := createTestUser(t, "alice@example.com", "Test123!!", true)
+	userRepo.users[testUser.Email] = testUser
+
+	// Measure time for wrong password (user exists).
+	start1 := time.Now()
+	_, _ = handler.Handle(context.Background(), LoginCommand{
+		Email:    "alice@example.com",
+		Password: "WrongPassword!!",
+	})
+	wrongPasswordDuration := time.Since(start1)
+
+	// Measure time for non-existent user (dummy hash comparison).
+	start2 := time.Now()
+	_, _ = handler.Handle(context.Background(), LoginCommand{
+		Email:    "nobody@example.com",
+		Password: "SomePassword!!",
+	})
+	nonExistentDuration := time.Since(start2)
+
+	// Both should take comparable time (within 200ms — bcrypt is slow).
+	diff := wrongPasswordDuration - nonExistentDuration
+	if diff < 0 {
+		diff = -diff
+	}
+	assert.Less(t, diff, 200*time.Millisecond,
+		"login timing for non-existent user (%v) and wrong password (%v) should be within 200ms",
+		nonExistentDuration, wrongPasswordDuration)
 }
 
 func TestLoginCommandHandler_RefreshTokenStored(t *testing.T) {

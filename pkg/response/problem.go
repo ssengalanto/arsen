@@ -25,15 +25,15 @@ type FieldError struct {
 }
 
 // WriteProblem writes an arbitrary ProblemDetail as an RFC 9457 response.
-func WriteProblem(w http.ResponseWriter, p ProblemDetail) {
+func WriteProblem(w http.ResponseWriter, p *ProblemDetail) {
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(p.Status)
-	json.NewEncoder(w).Encode(p) //nolint:errcheck
+	json.NewEncoder(w).Encode(p) //nolint:errcheck // best-effort write to response
 }
 
 // BadRequest writes a 400 problem detail response.
 func BadRequest(w http.ResponseWriter, r *http.Request, detail string, errs []FieldError) {
-	WriteProblem(w, ProblemDetail{
+	WriteProblem(w, &ProblemDetail{
 		Type:     "about:blank",
 		Title:    "Validation Failed",
 		Status:   http.StatusBadRequest,
@@ -45,7 +45,7 @@ func BadRequest(w http.ResponseWriter, r *http.Request, detail string, errs []Fi
 
 // Unauthorized writes a 401 problem detail response.
 func Unauthorized(w http.ResponseWriter, r *http.Request, detail string) {
-	WriteProblem(w, ProblemDetail{
+	WriteProblem(w, &ProblemDetail{
 		Type:     "about:blank",
 		Title:    "Authentication Failed",
 		Status:   http.StatusUnauthorized,
@@ -56,7 +56,7 @@ func Unauthorized(w http.ResponseWriter, r *http.Request, detail string) {
 
 // Forbidden writes a 403 problem detail response.
 func Forbidden(w http.ResponseWriter, r *http.Request, detail string) {
-	WriteProblem(w, ProblemDetail{
+	WriteProblem(w, &ProblemDetail{
 		Type:     "about:blank",
 		Title:    "Forbidden",
 		Status:   http.StatusForbidden,
@@ -67,7 +67,7 @@ func Forbidden(w http.ResponseWriter, r *http.Request, detail string) {
 
 // NotFound writes a 404 problem detail response.
 func NotFound(w http.ResponseWriter, r *http.Request, detail string) {
-	WriteProblem(w, ProblemDetail{
+	WriteProblem(w, &ProblemDetail{
 		Type:     "about:blank",
 		Title:    "Not Found",
 		Status:   http.StatusNotFound,
@@ -78,7 +78,7 @@ func NotFound(w http.ResponseWriter, r *http.Request, detail string) {
 
 // Conflict writes a 409 problem detail response.
 func Conflict(w http.ResponseWriter, r *http.Request, detail string) {
-	WriteProblem(w, ProblemDetail{
+	WriteProblem(w, &ProblemDetail{
 		Type:     "about:blank",
 		Title:    "Conflict",
 		Status:   http.StatusConflict,
@@ -89,7 +89,7 @@ func Conflict(w http.ResponseWriter, r *http.Request, detail string) {
 
 // TooManyRequests writes a 429 problem detail response.
 func TooManyRequests(w http.ResponseWriter, r *http.Request, detail string) {
-	WriteProblem(w, ProblemDetail{
+	WriteProblem(w, &ProblemDetail{
 		Type:     "about:blank",
 		Title:    "Too Many Requests",
 		Status:   http.StatusTooManyRequests,
@@ -105,7 +105,7 @@ func InternalError(w http.ResponseWriter, r *http.Request, correlationID string)
 	if correlationID != "" {
 		detail = "an unexpected error occurred (correlation_id: " + correlationID + ")"
 	}
-	WriteProblem(w, ProblemDetail{
+	WriteProblem(w, &ProblemDetail{
 		Type:     "about:blank",
 		Title:    "Internal Server Error",
 		Status:   http.StatusInternalServerError,

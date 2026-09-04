@@ -19,19 +19,19 @@ type testPayload struct {
 
 func TestJSON_WritesCorrectContentType(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/test", http.NoBody)
 
 	response.JSON(w, r, http.StatusOK, testPayload{ID: 1, Name: "alice"})
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
 }
 
 func TestJSON_WritesCorrectStatusCode(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/test", http.NoBody)
 
 	response.JSON(w, r, http.StatusOK, testPayload{ID: 1, Name: "alice"})
 
@@ -40,12 +40,12 @@ func TestJSON_WritesCorrectStatusCode(t *testing.T) {
 
 func TestJSON_MarshalsData(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/test", http.NoBody)
 
 	response.JSON(w, r, http.StatusOK, testPayload{ID: 42, Name: "bob"})
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	var body testPayload
 	require.NoError(t, json.NewDecoder(res.Body).Decode(&body))
@@ -56,19 +56,19 @@ func TestJSON_MarshalsData(t *testing.T) {
 
 func TestCreated_SetsLocationHeader(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+	r := httptest.NewRequest(http.MethodPost, "/api/users", http.NoBody)
 
 	response.Created(w, r, "/api/users/123", testPayload{ID: 123, Name: "charlie"})
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, "/api/users/123", res.Header.Get("Location"))
 }
 
 func TestCreated_Sets201Status(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+	r := httptest.NewRequest(http.MethodPost, "/api/users", http.NoBody)
 
 	response.Created(w, r, "/api/users/123", testPayload{ID: 123, Name: "charlie"})
 

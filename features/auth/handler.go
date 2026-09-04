@@ -73,10 +73,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.loginBus.Dispatch(r.Context(), LoginCommand{
-		Email:    req.Email,
-		Password: req.Password,
-	})
+	result, err := h.loginBus.Dispatch(r.Context(), LoginCommand(req))
 	if err != nil {
 		response.HandleError(w, r, err)
 		return

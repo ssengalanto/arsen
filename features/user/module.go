@@ -19,7 +19,7 @@ var Module = fx.Module("user",
 	}),
 
 	// Provide the refresh token revoker (avoids circular import with auth).
-	fx.Provide(func(db *sqlx.DB) RefreshTokenRevoker {
+	fx.Provide(func(db *sqlx.DB) RefreshTokenRevoker { //nolint:gocritic // lambda needed for interface conversion
 		return NewSQLRefreshTokenRevoker(db)
 	}),
 

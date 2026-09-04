@@ -14,13 +14,13 @@ import (
 )
 
 func TestRateLimit_AllowsRequestsWithinLimit(t *testing.T) {
-	handler := middleware.RateLimit(10, 10)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.RateLimit(10, 10)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	for i := 0; i < 10; i++ {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+		r := httptest.NewRequest(http.MethodGet, "/api/test", http.NoBody)
 		r.RemoteAddr = "192.168.1.1:12345"
 
 		handler.ServeHTTP(w, r)
@@ -29,20 +29,20 @@ func TestRateLimit_AllowsRequestsWithinLimit(t *testing.T) {
 }
 
 func TestRateLimit_Returns429WhenExceeded(t *testing.T) {
-	handler := middleware.RateLimit(1, 1)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.RateLimit(1, 1)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	// First request should pass.
 	w1 := httptest.NewRecorder()
-	r1 := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	r1 := httptest.NewRequest(http.MethodGet, "/api/test", http.NoBody)
 	r1.RemoteAddr = "10.0.0.1:54321"
 	handler.ServeHTTP(w1, r1)
 	assert.Equal(t, http.StatusOK, w1.Code)
 
 	// Second immediate request should be rate-limited.
 	w2 := httptest.NewRecorder()
-	r2 := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	r2 := httptest.NewRequest(http.MethodGet, "/api/test", http.NoBody)
 	r2.RemoteAddr = "10.0.0.1:54322"
 	handler.ServeHTTP(w2, r2)
 

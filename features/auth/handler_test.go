@@ -249,7 +249,7 @@ func TestHandler_Logout_Success(t *testing.T) {
 	accessToken, err := jwtSvc.CreateToken("user-123", 15*time.Minute)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/sessions/current", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/sessions/current", http.NoBody)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	rec := httptest.NewRecorder()
 
@@ -262,7 +262,7 @@ func TestHandler_Logout_Success(t *testing.T) {
 func TestHandler_Logout_Unauthorized_NoToken(t *testing.T) {
 	router := setupFullAuthRouter(&mockLoginHandler{}, &mockRefreshHandler{}, &mockLogoutHandler{})
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/sessions/current", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/sessions/current", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	router.ServeHTTP(rec, req)
@@ -286,7 +286,7 @@ func TestHandler_Logout_HandlerError(t *testing.T) {
 	accessToken, err := jwtSvc.CreateToken("user-123", 15*time.Minute)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/sessions/current", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/sessions/current", http.NoBody)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	rec := httptest.NewRecorder()
 
@@ -300,4 +300,38 @@ func TestHandler_Logout_HandlerError(t *testing.T) {
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&prob))
 
 	assert.Equal(t, http.StatusInternalServerError, prob.Status)
+}
+
+// ---------------------------------------------------------------------------
+// T105: JSON schema validation — Login response
+// ---------------------------------------------------------------------------
+
+func TestHandler_Login_ResponseSchema(t *testing.T) {
+	loginMock := &mockLoginHandler{
+		result: &LoginResult{
+			AccessToken:  "jwt-token",
+			RefreshToken: "refresh-token",
+			ExpiresIn:    900,
+		},
+	}
+	router := setupAuthRouter(loginMock)
+
+	body := `{"email":"alice@example.com","password":"Test123!!"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/sessions", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	var raw map[string]interface{}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&raw))
+
+	// Verify self, kind present
+	assert.Contains(t, raw, "self")
+	assert.Contains(t, raw, "kind")
+	// Verify camelCase (no snake_case)
+	for key := range raw {
+		assert.NotContains(t, key, "_", "response key %q should be camelCase", key)
+	}
+	// Verify tokenType is "Bearer"
+	assert.Equal(t, "Bearer", raw["tokenType"])
 }

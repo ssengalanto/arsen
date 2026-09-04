@@ -105,7 +105,7 @@ func (m *refreshMockAuthRepo) tokensByFamily(familyID string) []*RefreshToken {
 // Helper: seed a valid refresh token into the mock and return the raw string.
 // ---------------------------------------------------------------------------
 
-func seedRefreshToken(t *testing.T, repo *refreshMockAuthRepo, userID, familyID string, expiresAt time.Time) string {
+func seedRefreshToken(t *testing.T, repo *refreshMockAuthRepo, userID, familyID string, expiresAt time.Time) string { //nolint:unparam // test helper parameterized for clarity
 	t.Helper()
 	raw, hash, err := token.Generate()
 	require.NoError(t, err)

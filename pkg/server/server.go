@@ -44,7 +44,7 @@ func New(cfg *config.Config, jwtService *jwt.Service) *Server {
 	}))
 
 	r.MethodNotAllowed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response.WriteProblem(w, response.ProblemDetail{
+		response.WriteProblem(w, &response.ProblemDetail{
 			Type:     "about:blank",
 			Title:    "Method Not Allowed",
 			Status:   http.StatusMethodNotAllowed,

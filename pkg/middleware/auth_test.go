@@ -31,7 +31,7 @@ func TestAuth_ValidToken_PassesAndSetsUserID(t *testing.T) {
 	}))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	handler.ServeHTTP(w, r)
@@ -44,12 +44,12 @@ func TestAuth_ValidToken_PassesAndSetsUserID(t *testing.T) {
 func TestAuth_MissingAuthorizationHeader_Returns401(t *testing.T) {
 	svc := newTestJWTService()
 
-	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	// No Authorization header set.
 
 	handler.ServeHTTP(w, r)
@@ -60,12 +60,12 @@ func TestAuth_MissingAuthorizationHeader_Returns401(t *testing.T) {
 func TestAuth_MalformedAuthorizationHeader_Returns401(t *testing.T) {
 	svc := newTestJWTService()
 
-	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	r.Header.Set("Authorization", "Basic abc123")
 
 	handler.ServeHTTP(w, r)
@@ -78,12 +78,12 @@ func TestAuth_ExpiredToken_Returns401(t *testing.T) {
 	token, err := svc.CreateToken("user-42", -1*time.Minute)
 	require.NoError(t, err)
 
-	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	handler.ServeHTTP(w, r)
@@ -102,12 +102,12 @@ func TestAuth_TamperedToken_Returns401(t *testing.T) {
 		tampered = token[:len(token)-1] + "Y"
 	}
 
-	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.Auth(svc)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	r.Header.Set("Authorization", "Bearer "+tampered)
 
 	handler.ServeHTTP(w, r)
@@ -124,12 +124,12 @@ func TestAuth_WrongIssuer_Returns401(t *testing.T) {
 	// Validate with a different issuer.
 	correctSvc := jwt.NewService("test-secret", "correct-issuer", "test-audience")
 
-	handler := middleware.Auth(correctSvc)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := middleware.Auth(correctSvc)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	handler.ServeHTTP(w, r)

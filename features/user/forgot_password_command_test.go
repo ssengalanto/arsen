@@ -51,14 +51,15 @@ func TestForgotPasswordCommandHandler_SendsResetForVerifiedUser(t *testing.T) {
 	// Assert a password reset token was created in the repo.
 	found := false
 	for _, prt := range repo.passwordResetTokens {
-		if prt.UserID == user.ID {
-			found = true
-			assert.NotEmpty(t, prt.TokenHash, "token hash should not be empty")
-			assert.False(t, prt.ExpiresAt.IsZero(), "expires_at should be set")
-			assert.WithinDuration(t, time.Now().Add(1*time.Hour), prt.ExpiresAt, 5*time.Second,
-				"token should expire in approximately 1 hour")
-			break
+		if prt.UserID != user.ID {
+			continue
 		}
+		found = true
+		assert.NotEmpty(t, prt.TokenHash, "token hash should not be empty")
+		assert.False(t, prt.ExpiresAt.IsZero(), "expires_at should be set")
+		assert.WithinDuration(t, time.Now().Add(1*time.Hour), prt.ExpiresAt, 5*time.Second,
+			"token should expire in approximately 1 hour")
+		break
 	}
 	assert.True(t, found, "password reset token should be created for the user")
 

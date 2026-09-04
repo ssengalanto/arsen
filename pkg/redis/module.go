@@ -12,11 +12,11 @@ var Module = fx.Module("redis",
 	fx.Provide(New),
 	fx.Invoke(func(lc fx.Lifecycle, client *redis.Client) {
 		lc.Append(fx.Hook{
-			OnStart: func(ctx context.Context) error {
+			OnStart: func(_ context.Context) error {
 				slog.Info("redis connected")
 				return nil
 			},
-			OnStop: func(ctx context.Context) error {
+			OnStop: func(_ context.Context) error {
 				return client.Close()
 			},
 		})

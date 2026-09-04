@@ -49,7 +49,7 @@ func TestHandler_Healthz_ReturnsOK(t *testing.T) {
 	// can be empty.
 	router := setupHealthRouter(&mockReadinessHandler{})
 
-	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	req := httptest.NewRequest(http.MethodGet, "/healthz", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	router.ServeHTTP(rec, req)
@@ -75,7 +75,7 @@ func TestHandler_Readyz_Ready(t *testing.T) {
 
 	router := setupHealthRouter(readinessMock)
 
-	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	req := httptest.NewRequest(http.MethodGet, "/readyz", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	router.ServeHTTP(rec, req)
@@ -101,7 +101,7 @@ func TestHandler_Readyz_Unavailable(t *testing.T) {
 
 	router := setupHealthRouter(readinessMock)
 
-	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	req := httptest.NewRequest(http.MethodGet, "/readyz", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	router.ServeHTTP(rec, req)
@@ -129,10 +129,32 @@ func TestHandler_Readyz_QueryError(t *testing.T) {
 
 	router := setupHealthRouter(readinessMock)
 
-	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	req := httptest.NewRequest(http.MethodGet, "/readyz", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	router.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+}
+
+// ---------------------------------------------------------------------------
+// T105: JSON schema validation — Healthz response
+// ---------------------------------------------------------------------------
+
+func TestHandler_Healthz_ResponseSchema(t *testing.T) {
+	router := setupHealthRouter(&mockReadinessHandler{
+		result: &ReadinessResult{Ready: true, Database: "reachable"},
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", http.NoBody)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	var raw map[string]interface{}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&raw))
+
+	assert.Contains(t, raw, "self")
+	assert.Contains(t, raw, "kind")
+	assert.Equal(t, "Health", raw["kind"])
+	assert.Equal(t, "/healthz", raw["self"])
 }

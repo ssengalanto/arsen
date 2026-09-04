@@ -80,6 +80,23 @@ func TestNoopSender_DoesNotErrorForAnyInput(t *testing.T) {
 	}
 }
 
+func TestNoopSender_DoesNotLogHTMLBody(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, nil))
+
+	sender := email.NewNoopSender(logger)
+	err := sender.Send(context.Background(), email.SendParams{
+		To:      "user@example.com",
+		Subject: "Verify your email",
+		HTML:    `<a href="http://localhost/verify?token=secret-verification-token">Click here</a>`,
+	})
+	require.NoError(t, err)
+
+	output := buf.String()
+	assert.NotContains(t, output, "secret-verification-token",
+		"log output must not contain sensitive tokens from HTML body")
+}
+
 func TestNewResendSender_CreatesValidSender(t *testing.T) {
 	sender := email.NewResendSender("fake-api-key", "noreply@example.com", "Test App")
 	require.NotNil(t, sender, "NewResendSender should return a non-nil sender")

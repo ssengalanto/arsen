@@ -72,6 +72,37 @@ func TestNew_MissingResendAPIKeySucceedsInDev(t *testing.T) {
 	assert.NotNil(t, cfg)
 }
 
+func TestNew_DefaultValuesApplied(t *testing.T) {
+	resetViper(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/testdb")
+	t.Setenv("REDIS_URL", "redis://localhost:6379")
+	t.Setenv("JWT_SECRET", "supersecret")
+
+	cfg, err := New()
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, "dev", cfg.Env)
+	assert.Equal(t, ":8080", cfg.Server.Address)
+	assert.Equal(t, 15*time.Minute, cfg.JWT.AccessTokenDuration)
+	assert.Equal(t, 168*time.Hour, cfg.JWT.RefreshTokenDuration)
+	assert.Equal(t, 1*time.Hour, cfg.Cleanup.Interval)
+	assert.Equal(t, 10, cfg.RateLimit.Requests)
+	assert.Equal(t, 20, cfg.RateLimit.Burst)
+}
+
+func TestNew_EmptyJWTSecretRejected(t *testing.T) {
+	resetViper(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/testdb")
+	t.Setenv("REDIS_URL", "redis://localhost:6379")
+	t.Setenv("JWT_SECRET", "")
+
+	cfg, err := New()
+	assert.Nil(t, cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "JWT_SECRET")
+}
+
 func TestNew_ValidConfigLoadsAllValues(t *testing.T) {
 	resetViper(t)
 	t.Setenv("ENV", "prod")

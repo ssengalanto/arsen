@@ -16,7 +16,7 @@ var Module = fx.Module("server",
 	fx.Provide(New),
 	fx.Invoke(func(lc fx.Lifecycle, srv *Server) {
 		lc.Append(fx.Hook{
-			OnStart: func(ctx context.Context) error {
+			OnStart: func(_ context.Context) error {
 				ln, err := net.Listen("tcp", srv.HTTP.Addr)
 				if err != nil {
 					return err

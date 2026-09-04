@@ -23,7 +23,7 @@ type ResendSender struct {
 	fromName    string
 }
 
-func NewResendSender(apiKey string, fromAddress string, fromName string) *ResendSender {
+func NewResendSender(apiKey, fromAddress, fromName string) *ResendSender {
 	return &ResendSender{
 		client:      resend.NewClient(apiKey),
 		fromAddress: fromAddress,

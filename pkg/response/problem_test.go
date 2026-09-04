@@ -18,7 +18,7 @@ import (
 
 func TestBadRequest_SetsCorrectFields(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+	r := httptest.NewRequest(http.MethodPost, "/api/users", http.NoBody)
 
 	fieldErrors := []response.FieldError{
 		{Field: "email", Detail: "is required"},
@@ -28,7 +28,7 @@ func TestBadRequest_SetsCorrectFields(t *testing.T) {
 	response.BadRequest(w, r, "Request validation failed", fieldErrors)
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 	assert.Equal(t, "application/problem+json", res.Header.Get("Content-Type"))
@@ -48,12 +48,12 @@ func TestBadRequest_SetsCorrectFields(t *testing.T) {
 
 func TestUnauthorized_Sets401(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 
 	response.Unauthorized(w, r, "Invalid credentials")
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
@@ -66,12 +66,12 @@ func TestUnauthorized_Sets401(t *testing.T) {
 
 func TestNotFound_Sets404(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/users/999", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/users/999", http.NoBody)
 
 	response.NotFound(w, r, "User not found")
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 
@@ -84,12 +84,12 @@ func TestNotFound_Sets404(t *testing.T) {
 
 func TestInternalError_WithCorrelationID(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/data", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/data", http.NoBody)
 
 	response.InternalError(w, r, "abc-123-def")
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 
@@ -102,12 +102,12 @@ func TestInternalError_WithCorrelationID(t *testing.T) {
 
 func TestInternalError_WithoutCorrelationID(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/data", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/data", http.NoBody)
 
 	response.InternalError(w, r, "")
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 
@@ -122,13 +122,13 @@ func TestInternalError_WithoutCorrelationID(t *testing.T) {
 
 func TestHandleError_NotFoundError_Returns404(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/users/123", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/users/123", http.NoBody)
 
 	err := cqrs.NewNotFoundError("User", "123")
 	response.HandleError(w, r, err)
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 
@@ -141,13 +141,13 @@ func TestHandleError_NotFoundError_Returns404(t *testing.T) {
 
 func TestHandleError_ConflictError_Returns409(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+	r := httptest.NewRequest(http.MethodPost, "/api/users", http.NoBody)
 
 	err := cqrs.NewConflictError("User", "alice@example.com", "email already exists")
 	response.HandleError(w, r, err)
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusConflict, res.StatusCode)
 
@@ -159,7 +159,7 @@ func TestHandleError_ConflictError_Returns409(t *testing.T) {
 
 func TestHandleError_ValidationError_Returns400WithFieldErrors(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+	r := httptest.NewRequest(http.MethodPost, "/api/users", http.NoBody)
 
 	err := cqrs.NewValidationError([]cqrs.FieldError{
 		{Field: "email", Detail: "is required"},
@@ -168,7 +168,7 @@ func TestHandleError_ValidationError_Returns400WithFieldErrors(t *testing.T) {
 	response.HandleError(w, r, err)
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 
@@ -185,13 +185,13 @@ func TestHandleError_ValidationError_Returns400WithFieldErrors(t *testing.T) {
 
 func TestHandleError_UnauthorizedError_Returns401(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 
 	err := cqrs.NewUnauthorizedError("invalid token")
 	response.HandleError(w, r, err)
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
@@ -203,13 +203,13 @@ func TestHandleError_UnauthorizedError_Returns401(t *testing.T) {
 
 func TestHandleError_ForbiddenError_Returns403(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodDelete, "/api/admin/users/1", nil)
+	r := httptest.NewRequest(http.MethodDelete, "/api/admin/users/1", http.NoBody)
 
 	err := cqrs.NewForbiddenError("admin access required")
 	response.HandleError(w, r, err)
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusForbidden, res.StatusCode)
 
@@ -221,13 +221,13 @@ func TestHandleError_ForbiddenError_Returns403(t *testing.T) {
 
 func TestHandleError_UnknownError_Returns500(t *testing.T) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/api/data", nil)
+	r := httptest.NewRequest(http.MethodGet, "/api/data", http.NoBody)
 
 	err := errors.New("something completely unexpected")
 	response.HandleError(w, r, err)
 
 	res := w.Result()
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck // test cleanup
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 

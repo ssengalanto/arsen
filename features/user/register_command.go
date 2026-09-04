@@ -139,7 +139,7 @@ func (h *RegisterCommandHandler) Handle(ctx context.Context, cmd RegisterCommand
 
 	// Send verification email.
 	verifyURL := h.cfg.AppBaseURL + "/api/users/verify?token=" + rawToken
-	html := fmt.Sprintf(
+	html := fmt.Sprintf( //nolint:gocritic // HTML template uses quoted URL, not Go quoting
 		`<p>Welcome! Please verify your email by clicking the link below:</p><p><a href="%s">Verify Email</a></p><p>This link expires in 24 hours.</p>`,
 		verifyURL,
 	)

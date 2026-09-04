@@ -9,7 +9,7 @@ import (
 func JSON(w http.ResponseWriter, _ *http.Request, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data) //nolint:errcheck
+	json.NewEncoder(w).Encode(data) //nolint:errcheck // best-effort write to response
 }
 
 // Created writes a 201 JSON response and sets the Location header.
