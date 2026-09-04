@@ -3,6 +3,7 @@ package main
 import (
 	"go.uber.org/fx"
 
+	"arsen/features/auth"
 	"arsen/features/user"
 	"arsen/pkg/config"
 	"arsen/pkg/database"
@@ -21,5 +22,6 @@ func main() {
 		jwt.Module,
 		server.Module,
 		user.Module,
+		auth.Module,
 	).Run()
 }

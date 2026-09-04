@@ -110,22 +110,22 @@
 
 ### Tests
 
-- [ ] T050 [P] [US1] Write tests for RegisterCommand handler in `features/user/register_command_test.go` — valid registration creates user with emailVerified=false, duplicate email returns conflict error, password validation enforced, bcrypt hash generated, verification token created, email service called
-- [ ] T051 [P] [US8] Write tests for VerifyEmailCommand handler in `features/user/verify_email_command_test.go` — valid token verifies email, expired token rejected, used token rejected, invalid token rejected, welcome event published
-- [ ] T052 [P] [US8] Write tests for ResendVerificationCommand handler in `features/user/resend_verification_command_test.go` — invalidates old tokens, creates new token, sends email, returns same response for non-existent email (no enumeration)
-- [ ] T053 [P] [US1] Write HTTP handler tests for POST /api/users in `features/user/handler_test.go` — 201 response with Location header, validation errors return RFC 9457, rate limiting returns 429
-- [ ] T054 [P] [US8] Write HTTP handler tests for POST /api/users/verify and POST /api/users/resend-verification in `features/user/handler_test.go` — success responses, 401 for bad tokens, rate limiting
+- [x] T050 [P] [US1] Write tests for RegisterCommand handler in `features/user/register_command_test.go` — valid registration creates user with emailVerified=false, duplicate email returns conflict error, password validation enforced, bcrypt hash generated, verification token created, email service called
+- [x] T051 [P] [US8] Write tests for VerifyEmailCommand handler in `features/user/verify_email_command_test.go` — valid token verifies email, expired token rejected, used token rejected, invalid token rejected, welcome event published
+- [x] T052 [P] [US8] Write tests for ResendVerificationCommand handler in `features/user/resend_verification_command_test.go` — invalidates old tokens, creates new token, sends email, returns same response for non-existent email (no enumeration)
+- [x] T053 [P] [US1] Write HTTP handler tests for POST /api/users in `features/user/handler_test.go` — 201 response with Location header, validation errors return RFC 9457, rate limiting returns 429
+- [x] T054 [P] [US8] Write HTTP handler tests for POST /api/users/verify and POST /api/users/resend-verification in `features/user/handler_test.go` — success responses, 401 for bad tokens, rate limiting
 
 ### Implementation
 
-- [ ] T055 [US1] Implement user repository interface and sqlx implementation in `features/user/repository.go` — Create(ctx, user), GetByEmail(ctx, email), GetByID(ctx, id), UpdateEmailVerified(ctx, id, verified), UpdatePasswordHash(ctx, id, hash). Include verification token methods: CreateVerificationToken(ctx, token), GetVerificationTokenByHash(ctx, hash), InvalidateUserVerificationTokens(ctx, userID)
-- [ ] T056 [US1] Implement RegisterCommand and RegisterCommandHandler in `features/user/register_command.go` — validate input (email format, password strength via custom validator), check email uniqueness, bcrypt hash password (cost >= 12), create user with emailVerified=false, generate verification token (256-bit), store token hash, call EmailSender with verification link, return created user. Anti-enumeration: same error for duplicate email.
-- [ ] T057 [US8] Implement VerifyEmailCommand and VerifyEmailCommandHandler in `features/user/verify_email_command.go` — hash submitted token, look up in DB, check not expired (24h) and not used, mark token used, set user emailVerified=true, publish EmailVerifiedEvent via EventBus. All error cases return identical UnauthorizedError.
-- [ ] T058 [US8] Implement ResendVerificationCommand and ResendVerificationCommandHandler in `features/user/resend_verification_command.go` — look up user by email, if exists and unverified: invalidate existing tokens, generate new token, send verification email. Always return success (no enumeration).
-- [ ] T059 [US10] Implement EmailVerifiedEvent and welcome email handler in `features/user/welcome_email_handler.go` — EventHandler[EmailVerifiedEvent] that sends welcome email via EmailSender. Best-effort: log failure but don't propagate error. Register on EventBus (async dispatch).
-- [ ] T060 [US1] Implement HTTP handlers in `features/user/handler.go` — POST /api/users (register), POST /api/users/verify, POST /api/users/resend-verification. Each handler: parse request, construct command, dispatch via bus, translate result/error to HTTP response. Apply rate limiting per endpoint (10/min register, 10/min verify, 5/min resend-verification).
-- [ ] T061 [US1] Implement fx.Module registration in `features/user/module.go` — provide repository, command buses (with logging+validation+recovery middleware), event bus with welcome email handler, HTTP handler. Wire into router.
-- [ ] T062 [US1] Wire user feature module into `cmd/api/main.go` — add to fx.Options()
+- [x] T055 [US1] Implement user repository interface and sqlx implementation in `features/user/repository.go` — Create(ctx, user), GetByEmail(ctx, email), GetByID(ctx, id), UpdateEmailVerified(ctx, id, verified), UpdatePasswordHash(ctx, id, hash). Include verification token methods: CreateVerificationToken(ctx, token), GetVerificationTokenByHash(ctx, hash), InvalidateUserVerificationTokens(ctx, userID)
+- [x] T056 [US1] Implement RegisterCommand and RegisterCommandHandler in `features/user/register_command.go` — validate input (email format, password strength via custom validator), check email uniqueness, bcrypt hash password (cost >= 12), create user with emailVerified=false, generate verification token (256-bit), store token hash, call EmailSender with verification link, return created user. Anti-enumeration: same error for duplicate email.
+- [x] T057 [US8] Implement VerifyEmailCommand and VerifyEmailCommandHandler in `features/user/verify_email_command.go` — hash submitted token, look up in DB, check not expired (24h) and not used, mark token used, set user emailVerified=true, publish EmailVerifiedEvent via EventBus. All error cases return identical UnauthorizedError.
+- [x] T058 [US8] Implement ResendVerificationCommand and ResendVerificationCommandHandler in `features/user/resend_verification_command.go` — look up user by email, if exists and unverified: invalidate existing tokens, generate new token, send verification email. Always return success (no enumeration).
+- [x] T059 [US10] Implement EmailVerifiedEvent and welcome email handler in `features/user/welcome_email_handler.go` — EventHandler[EmailVerifiedEvent] that sends welcome email via EmailSender. Best-effort: log failure but don't propagate error. Register on EventBus (async dispatch).
+- [x] T060 [US1] Implement HTTP handlers in `features/user/handler.go` — POST /api/users (register), POST /api/users/verify, POST /api/users/resend-verification. Each handler: parse request, construct command, dispatch via bus, translate result/error to HTTP response. Apply rate limiting per endpoint (10/min register, 10/min verify, 5/min resend-verification).
+- [x] T061 [US1] Implement fx.Module registration in `features/user/module.go` — provide repository, command buses (with logging+validation+recovery middleware), event bus with welcome email handler, HTTP handler. Wire into router.
+- [x] T062 [US1] Wire user feature module into `cmd/api/main.go` — add to fx.Options()
 
 **Checkpoint**: `go test ./features/user/...` green. Can register via curl, see verification token in dev logs, verify email, confirm welcome email logged. Resend-verification works. Duplicate email returns generic error.
 
@@ -139,18 +139,18 @@
 
 ### Tests
 
-- [ ] T063 [P] [US2] Write tests for LoginCommand handler in `features/auth/login_command_test.go` — valid credentials return tokens, wrong password returns unauthorized, non-existent user returns same error with comparable timing, unverified email returns forbidden, bcrypt comparison timing is constant
-- [ ] T064 [P] [US2] Write HTTP handler tests for POST /api/sessions in `features/auth/handler_test.go` — 200 with accessToken/refreshToken/expiresIn, 401 for bad credentials, 403 for unverified, rate limiting 429
+- [x] T063 [P] [US2] Write tests for LoginCommand handler in `features/auth/login_command_test.go` — valid credentials return tokens, wrong password returns unauthorized, non-existent user returns same error with comparable timing, unverified email returns forbidden, bcrypt comparison timing is constant
+- [x] T064 [P] [US2] Write HTTP handler tests for POST /api/sessions in `features/auth/handler_test.go` — 200 with accessToken/refreshToken/expiresIn, 401 for bad credentials, 403 for unverified, rate limiting 429
 
 ### Implementation
 
-- [ ] T065 [US2] Implement auth repository interface and sqlx implementation in `features/auth/repository.go` — CreateRefreshToken(ctx, token), GetRefreshTokenByHash(ctx, hash), RevokeRefreshTokenFamily(ctx, familyID), RevokeAllUserRefreshTokens(ctx, userID), GetRefreshTokenByFamilyLatest(ctx, familyID)
-- [ ] T066 [US2] Implement JWT service (access token creation + validation) as shared utility used by auth — create HS256-signed JWT with sub, iat, exp, jti, iss, aud claims. Validate and parse tokens. Use golang-jwt/jwt/v5. Place in `pkg/jwt/jwt.go` with fx.Module in `pkg/jwt/module.go`
-- [ ] T067 [US2] Implement LoginCommand and LoginCommandHandler in `features/auth/login_command.go` — get user by email (if not found, still run bcrypt compare against dummy hash for constant timing), verify password via bcrypt, check emailVerified (return ForbiddenError if false), generate access token (JWT, ~15 min), generate refresh token (256-bit random, new family_id), store refresh token hash, return token pair. Anti-enumeration: identical error for not-found and wrong-password.
-- [ ] T068 [US2] Implement HTTP handler for POST /api/sessions in `features/auth/handler.go` — parse login request, dispatch LoginCommand, translate to JSON response with self, kind, accessToken, refreshToken, tokenType, expiresIn. Apply rate limiting (10/min).
-- [ ] T069 [US2] Implement fx.Module registration in `features/auth/module.go` — provide repository, login command bus, HTTP handler. Wire into router.
-- [ ] T070 [US2] Wire auth feature module into `cmd/api/main.go` — add to fx.Options()
-- [ ] T071 [P] [US2] Write tests for JWT service (create, validate, expired rejection, tampered rejection, wrong issuer/audience rejection) in `pkg/jwt/jwt_test.go`
+- [x] T065 [US2] Implement auth repository interface and sqlx implementation in `features/auth/repository.go` — CreateRefreshToken(ctx, token), GetRefreshTokenByHash(ctx, hash), RevokeRefreshTokenFamily(ctx, familyID), RevokeAllUserRefreshTokens(ctx, userID), GetRefreshTokenByFamilyLatest(ctx, familyID)
+- [x] T066 [US2] Implement JWT service (access token creation + validation) as shared utility used by auth — create HS256-signed JWT with sub, iat, exp, jti, iss, aud claims. Validate and parse tokens. Use golang-jwt/jwt/v5. Place in `pkg/jwt/jwt.go` with fx.Module in `pkg/jwt/module.go`
+- [x] T067 [US2] Implement LoginCommand and LoginCommandHandler in `features/auth/login_command.go` — get user by email (if not found, still run bcrypt compare against dummy hash for constant timing), verify password via bcrypt, check emailVerified (return ForbiddenError if false), generate access token (JWT, ~15 min), generate refresh token (256-bit random, new family_id), store refresh token hash, return token pair. Anti-enumeration: identical error for not-found and wrong-password.
+- [x] T068 [US2] Implement HTTP handler for POST /api/sessions in `features/auth/handler.go` — parse login request, dispatch LoginCommand, translate to JSON response with self, kind, accessToken, refreshToken, tokenType, expiresIn. Apply rate limiting (10/min).
+- [x] T069 [US2] Implement fx.Module registration in `features/auth/module.go` — provide repository, login command bus, HTTP handler. Wire into router.
+- [x] T070 [US2] Wire auth feature module into `cmd/api/main.go` — add to fx.Options()
+- [x] T071 [P] [US2] Write tests for JWT service (create, validate, expired rejection, tampered rejection, wrong issuer/audience rejection) in `pkg/jwt/jwt_test.go`
 
 **Checkpoint**: `go test ./features/auth/...` and `go test ./pkg/jwt/...` green. Full register → verify → login flow works via curl. Unverified login returns 403. Wrong password indistinguishable from non-existent user.
 
