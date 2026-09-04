@@ -49,6 +49,23 @@ Use `cqrs.Unit` as the return type for commands with no meaningful result (logou
 3. Add a new `fx.Provide` for the `*cqrs.CommandBus[XCommand, XResult]` with middleware
 4. Inject the bus into the handler, add the HTTP route in `RegisterRoutes`
 
+## Cross-Feature Data Access
+
+Features must not import another feature's `Repository` interface. When feature A needs data owned by feature B, feature B exposes a query through its `QueryBus`:
+
+1. In the owning feature, create `get_<entity>_by_<field>_query.go` with the query struct, result struct, and handler
+2. Wire the handler and `QueryBus` in the owning feature's `module.go`
+3. In the consuming feature, inject `*cqrs.QueryBus[owner.XQuery, *owner.XResult]` and call `.Ask(ctx, query)`
+
+Example: auth needs user data for login. User feature exposes `GetUserByEmailQuery` via its query bus. Auth injects `*cqrs.QueryBus[user.GetUserByEmailQuery, *user.GetUserByEmailResult]` — never `user.Repository`.
+
+In tests, mock the `cqrs.QueryHandler` interface and wrap it in a real `QueryBus`:
+```go
+mock := &mockUserByEmailHandler{users: make(map[string]*user.User)}
+bus := cqrs.NewQueryBus[user.GetUserByEmailQuery, *user.GetUserByEmailResult](mock)
+handler := NewLoginCommandHandler(bus, authRepo, jwtSvc, cfg)
+```
+
 ## Anti-Enumeration Pattern
 
 Register, forgot-password, and resend-verification endpoints must return identical responses regardless of whether the email exists. In handlers, catch `ConflictError`/`NotFoundError` and normalize to a generic success response. See `features/user/handler.go` for the pattern.
