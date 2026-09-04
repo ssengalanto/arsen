@@ -205,13 +205,13 @@
 
 ### Tests
 
-- [ ] T081 [P] [US5] Write tests for LogoutCommand handler in `features/auth/logout_command_test.go` — revokes entire family, idempotent (second logout succeeds), refresh after logout fails
+- [x] T081 [P] [US5] Write tests for LogoutCommand handler in `features/auth/logout_command_test.go` — revokes entire family, idempotent (second logout succeeds), refresh after logout fails
 
 ### Implementation
 
-- [ ] T082 [US5] Implement LogoutCommand and LogoutCommandHandler in `features/auth/logout_command.go` — extract user ID from context, find active refresh token family for user's current session, revoke entire family. Idempotent: return success even if already revoked.
-- [ ] T083 [US5] Add DELETE /api/sessions/current route to auth HTTP handler in `features/auth/handler.go` — protected by auth middleware, dispatch LogoutCommand, respond with 204 No Content
-- [ ] T084 [US5] Update auth fx.Module in `features/auth/module.go` to wire LogoutCommand bus
+- [x] T082 [US5] Implement LogoutCommand and LogoutCommandHandler in `features/auth/logout_command.go` — extract user ID from context, find active refresh token family for user's current session, revoke entire family. Idempotent: return success even if already revoked.
+- [x] T083 [US5] Add DELETE /api/sessions/current route to auth HTTP handler in `features/auth/handler.go` — protected by auth middleware, dispatch LogoutCommand, respond with 204 No Content
+- [x] T084 [US5] Update auth fx.Module in `features/auth/module.go` to wire LogoutCommand bus
 
 **Checkpoint**: `go test ./features/auth/...` green. Login → logout → refresh fails. Second logout returns 204.
 

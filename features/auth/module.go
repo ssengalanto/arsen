@@ -21,6 +21,7 @@ var Module = fx.Module("auth",
 	// Provide the command handlers.
 	fx.Provide(NewLoginCommandHandler),
 	fx.Provide(NewRefreshTokenCommandHandler),
+	fx.Provide(NewLogoutCommandHandler),
 
 	// Provide the HTTP handler.
 	fx.Provide(NewHandler),
@@ -40,9 +41,16 @@ var Module = fx.Module("auth",
 			cqrsmw.Validation[RefreshTokenCommand, *RefreshTokenResult](),
 		)
 	}),
+	fx.Provide(func(h *LogoutCommandHandler) *cqrs.CommandBus[LogoutCommand, cqrs.Unit] {
+		return cqrs.NewCommandBus[LogoutCommand, cqrs.Unit](h,
+			cqrsmw.Recovery[LogoutCommand, cqrs.Unit](),
+			cqrsmw.Logging[LogoutCommand, cqrs.Unit](slog.Default()),
+			cqrsmw.Validation[LogoutCommand, cqrs.Unit](),
+		)
+	}),
 
 	// Wire routes into the server.
 	fx.Invoke(func(srv *server.Server, h *Handler) {
-		h.RegisterRoutes(srv.Router)
+		h.RegisterRoutes(srv.Router, srv.JWTService)
 	}),
 )
