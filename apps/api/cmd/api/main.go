@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log/slog"
+
 	"go.uber.org/fx"
 
 	"arsen/features/auth"
@@ -37,6 +39,7 @@ import (
 // @tag.description Health and readiness check endpoints
 func main() {
 	fx.New(
+		fx.Provide(func() *slog.Logger { return slog.Default() }),
 		config.Module,
 		database.Module,
 		redis.Module,
