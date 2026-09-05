@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# arsen web
 
-## Getting Started
+Next.js 16 feature-sliced frontend for the `arsen` stack. It talks to the Go
+backend (`apps/api`) exclusively through its own BFF route handlers, converting
+backend tokens into httpOnly cookies so the browser never holds a token.
 
-First, run the development server:
+- **Architecture & how to add a feature:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
+- **Why each dependency / decision:** [`docs/DECISIONS.md`](./docs/DECISIONS.md)
+
+## Quick start (clone → working login in ~5 minutes)
+
+### Prerequisites
+
+- Node 20+ and **pnpm 10** (`corepack enable`)
+- The Go backend running with Postgres + Redis. From the repo root:
+  `task docker-up` starts the full dev stack, or run `task api:run` with a local
+  `.env` + Postgres + Redis.
+
+### 1. Install & configure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env` values:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Var | Default | Meaning |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8080` | Base URL of the Go backend the BFF proxies to |
+| `SESSION_REFRESH_MAX_AGE` | `2592000` (30 days) | Refresh-cookie lifetime in seconds |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Have a **verified** account ready
 
-## Learn More
+Registration creates an **unverified** user and does **not** log you in — the
+backend returns **403** on login until the email is verified (see R-2 in
+[`docs/DECISIONS.md`](./docs/DECISIONS.md)). Dev email is a no-op, so verify
+out-of-band:
 
-To learn more about Next.js, take a look at the following resources:
+- Register at `/register` (or `POST /api/users`), then flip `email_verified` to
+  `true` for that user directly in Postgres, **or**
+- seed a pre-verified user in your DB setup.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Then sign in at `/login`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Run
 
-## Deploy on Vercel
+```bash
+pnpm dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open <http://localhost:3000>. Sign in with the verified account → you land on
+`/dashboard`. Protected routes (`/dashboard`, `/resources`) redirect to `/login`
+when no session cookie is present.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+```bash
+pnpm dev          # Next.js dev server
+pnpm build        # production build
+pnpm start        # serve the production build
+pnpm test         # Vitest (unit + integration, MSW-mocked)
+pnpm test:watch   # Vitest watch mode
+pnpm e2e          # Playwright end-to-end
+pnpm lint         # ESLint (incl. the feature import-boundary rule)
+pnpm typecheck    # tsc --noEmit (strict)
+pnpm format       # Prettier
+pnpm check        # typecheck + lint + test (run before pushing)
+```
+
+All of the above are also available from the repo root via `task web:<cmd>`.
+
+## Project layout
+
+```
+src/
+  features/<name>/   # self-contained slices (schemas, store, fetchers, hooks, components)
+  app/               # Next.js routes: pages (RSC) + BFF route handlers under app/api/*
+  lib/               # shared plumbing: api client, swr config, auth cookies, ui store
+  components/ui/      # shadcn / base-ui primitives
+```
+
+See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the read/write chains,
+the server-state-vs-UI-state rules, and the step-by-step guide to adding a slice.
