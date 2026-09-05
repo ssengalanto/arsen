@@ -20,15 +20,15 @@
 
 ### User Story 1 - Secure end-to-end authentication (Priority: P1)
 
-An end user of an app forked from this boilerplate can register an account, log in, stay signed in across page reloads, be blocked from protected pages when unauthenticated, and log out. Throughout, the access credential is never exposed to client-side JavaScript.
+An end user of an app forked from this boilerplate can register an account (which requires email verification before first sign-in), log in, stay signed in across page reloads, be blocked from protected pages when unauthenticated, and log out. Throughout, the access credential is never exposed to client-side JavaScript.
 
 **Why this priority**: Authentication is the core deliverable and the hardest thing to get right and secure. A boilerplate that gets auth wrong is worse than none. This slice alone — register, login, protected area, logout — is a viable MVP that every forked app immediately relies on.
 
-**Independent Test**: With the Go backend reachable, exercise register → land in the protected app → reload (still signed in) → log out → attempt a protected route and get redirected to login. Separately, assert via automated test that the access token is absent from every client-readable surface (Zustand state, `localStorage`, `sessionStorage`, and any client-serialized output).
+**Independent Test**: With the Go backend reachable and a pre-verified account, exercise login → land in the protected app → reload (still signed in) → log out → attempt a protected route and get redirected to login. (Registration is tested separately as register → verify-notice redirect, since the backend blocks login until the email is verified.) Separately, assert via automated test that the access token is absent from every client-readable surface (Zustand state, `localStorage`, `sessionStorage`, and any client-serialized output).
 
 **Acceptance Scenarios**:
 
-1. **Given** a visitor on the register page, **When** they submit valid unique account details, **Then** an account is created, a session is established, and they are redirected into the protected area.
+1. **Given** a visitor on the register page, **When** they submit valid unique account details, **Then** an unverified account is created, no session is established, and they are redirected to the login page with a "verify your email" notice.
 2. **Given** a registered user on the login page, **When** they submit correct credentials, **Then** a session is established and they are redirected to the protected app (or to the `next` destination they were bounced from).
 3. **Given** an authenticated user, **When** they reload the page or open a new tab, **Then** they remain signed in and their profile is shown without re-entering credentials.
 4. **Given** an unauthenticated visitor, **When** they navigate directly to any protected route, **Then** they are redirected to the login page with the intended destination preserved.
@@ -87,7 +87,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 
 #### Authentication & session
 
-- **FR-001**: The system MUST let a visitor register a new account and, on success, establish an authenticated session and redirect into the protected area.
+- **FR-001**: The system MUST let a visitor register a new account. Because the backend requires email verification before authentication, a successful registration MUST NOT establish a session; instead the system MUST redirect to the login page with a notice that the email must be verified before signing in.
 - **FR-002**: The system MUST let a registered user log in with correct credentials and establish an authenticated session.
 - **FR-003**: The system MUST keep the user signed in across page reloads and new tabs until logout or session expiry.
 - **FR-004**: The system MUST let a user log out, which revokes the server-side session, clears the client-held profile, and redirects to login — in that order, and completing the client cleanup even if the server revoke fails.
@@ -125,7 +125,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 
 - **FR-025**: A fresh clone MUST install and run a working app against the backend, and MUST pass type-checking with zero errors, linting with zero warnings, and the automated test suite.
 - **FR-026**: Automated tests MUST cover the logic-dense parts first (schemas, hooks, the auth flow, and mutation/optimistic paths), including an explicit test that the access credential is absent from all client-readable surfaces, and MUST mock the network rather than hand-stub it.
-- **FR-027**: An end-to-end test MUST cover the happy path: register → land in app → create a resource → see it listed → log out → confirm a protected route redirects to login.
+- **FR-027**: An end-to-end test MUST cover the happy path: register (→ redirected to login with a verify notice) → log in with a pre-verified account → create a resource → see it listed → log out → confirm a protected route redirects to login.
 - **FR-028**: A README MUST get a developer from clone to a working login in under five minutes.
 
 ### Key Entities *(include if feature involves data)*
@@ -147,7 +147,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 - **SC-005**: A fresh clone reaches a working login screen in under five minutes following the README, and the type-check, lint, and test gates all pass clean.
 - **SC-006**: Creating a resource shows the new item in the list within ~100 ms (optimistically), and a failed create rolls the item back 100% of the time.
 - **SC-007**: Automated coverage on feature logic (hooks, fetchers, schemas) is at least 80%.
-- **SC-008**: The end-to-end happy path (register → create → logout → protected-route redirect) passes reliably.
+- **SC-008**: The end-to-end happy path (register → verify-notice redirect → login with a pre-verified account → create → logout → protected-route redirect) passes reliably.
 - **SC-009**: Every runtime dependency has a one-line justification and a rejected alternative recorded.
 
 ## Assumptions
@@ -157,6 +157,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 - The chosen approach proxies all backend calls through a server-side layer in the web app and stores the session in an httpOnly, Secure, SameSite=Lax cookie; the browser never holds a bearer token. (This is the default resolution; the alternative direct-browser-to-backend approach is explicitly not chosen.)
 - Server-rendered first paint is used for list/detail data, handed to the client cache as fallback; interactive/mutable data is owned by the client cache thereafter.
 - "Resource" is a deliberately generic stand-in intended to be renamed per real feature; no additional demo features or placeholder pages are in scope.
+- No generic `resource` endpoint exists on the Go backend; the demo slice's server-side proxy is therefore backed by an in-memory, per-server-process store, clearly labeled as a stand-in to be repointed at a real backend. This keeps the boilerplate self-contained while still exercising the full read/write/optimistic chain.
 - Design/UI is intentionally raw and easily re-themeable (a boilerplate starting point), built on generated component primitives rather than a bespoke design system.
 - Standard modern-browser support; no IE/legacy targets. Mobile-responsive is desirable but not a gating requirement for the boilerplate.
 - Email verification, password reset, and other extended auth flows exist in the backend but are out of scope for this frontend boilerplate's initial slice unless later requested; the core is register/login/logout/session/refresh.
