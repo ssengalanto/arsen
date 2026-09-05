@@ -8,6 +8,14 @@
 
 **Input**: User description: "Production-grade, reusable Next.js App Router boilerplate (feature-sliced; SWR for server data, Zustand for UI state, react-hook-form + zod for forms, shadcn/ui primitives). Frontend counterpart to the existing Go JWT backend that returns RFC 9457 problem+json errors. Deliver end-to-end authentication securely (access token never readable by JavaScript) plus one generic CRUD `resource` slice that demonstrates the full data-fetching chain. It must run, type-check, lint, and test clean."
 
+## Clarifications
+
+### Session 2026-09-05
+
+- Q: How should middleware protect the (app) route group? → A: Presence check only — middleware checks the session cookie exists; the server-side proxy is the real authority and rejects invalid/expired credentials (triggering refresh). No signing secret shared with the web app.
+- Q: What SameSite policy should the httpOnly session cookie use? → A: Lax — sent on top-level GET navigations (preserves the ?next= login-redirect UX), blocks cross-site POSTs; CSRF surface stays low behind the server-side proxy.
+- Q: What fields should the generic demo resource have? → A: id, title (required), description (optional), status (enum: draft/active/archived), plus server-managed createdAt/updatedAt — exercises required + optional + enum validation.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Secure end-to-end authentication (Priority: P1)
@@ -85,7 +93,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 - **FR-004**: The system MUST let a user log out, which revokes the server-side session, clears the client-held profile, and redirects to login — in that order, and completing the client cleanup even if the server revoke fails.
 - **FR-005**: The system MUST redirect unauthenticated requests for protected routes to the login page while preserving the originally requested destination.
 - **FR-006**: The system MUST rotate the access credential automatically before/at expiry (or upon an unauthorized proxied response), retrying the original action once, without user interaction.
-- **FR-007**: The access credential MUST NOT be readable by client-side JavaScript at any point — it MUST NOT appear in browser web storage, client state, or any client-serialized output. Only a non-sensitive user profile may be cached client-side for UI.
+- **FR-007**: The access credential MUST NOT be readable by client-side JavaScript at any point — it MUST NOT appear in browser web storage, client state, or any client-serialized output. It MUST be held in an httpOnly, Secure, SameSite=Lax cookie. Only a non-sensitive user profile may be cached client-side for UI.
 - **FR-008**: The refresh credential MUST never be exposed to the browser; credential rotation MUST be performed server-side.
 - **FR-009**: The system MUST expose the current user's profile to the app shell via a single documented session accessor, reconciling any client-cached profile against the authoritative server session.
 - **FR-010**: Authentication forms MUST map backend problem-detail errors to field-level messages where applicable, with a safe generic fallback, and MUST NOT display raw backend text, tokens, or personal data, nor log them.
@@ -111,7 +119,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 
 - **FR-022**: All non-success responses from the backend MUST be surfaced as a typed application error so that error states and the global error boundary function correctly.
 - **FR-023**: All calls to the external backend MUST be proxied server-side (the browser MUST NOT call the backend directly with the credential), which also removes the need for cross-origin browser configuration.
-- **FR-024**: Route protection MUST, at minimum, verify presence of a session on protected routes; the chosen depth of verification (presence vs. signature) MUST be documented with its rationale.
+- **FR-024**: Route protection MUST verify presence of a session cookie on protected routes at the edge (redirecting to login when absent). Signature verification is NOT performed at the edge — the server-side proxy is the authority for credential validity — so no backend signing secret is shared with the web app.
 
 #### Quality gates
 
@@ -125,7 +133,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 - **User Profile**: The non-sensitive representation of the signed-in user (identifier, email, display fields) safe to cache client-side for UI. Explicitly excludes any credential.
 - **Session**: The authenticated state of a user, held server-side and represented to the browser only as an opaque, non-JavaScript-readable cookie. Source of truth for whether the user is signed in.
 - **Access Credential / Refresh Credential**: Short-lived and long-lived proofs of authentication managed entirely server-side; never exposed to the browser.
-- **Resource**: A generic domain record used to demonstrate the CRUD chain (list/detail/create/update/delete). Its concrete fields are placeholders to be renamed per real feature.
+- **Resource**: A generic domain record used to demonstrate the CRUD chain (list/detail/create/update/delete). Fields: `id`, `title` (required text), `description` (optional text), `status` (enum: draft | active | archived), and server-managed `createdAt` / `updatedAt`. These fields are a deliberate placeholder shape to be renamed per real feature; they are chosen to exercise required, optional, and enum validation.
 - **Draft**: A partially completed resource being authored, retained across form close/reopen and discarded on successful submit.
 
 ## Success Criteria *(mandatory)*
@@ -146,7 +154,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 
 - The existing Go JWT backend is the counterpart API, reachable at a configurable base URL (default `http://localhost:8080`), and returns RFC 9457 `application/problem+json` errors with login/register/refresh/logout endpoints as already implemented in this repo's `apps/api`.
 - This boilerplate targets the repo's existing `apps/web` Next.js workspace (App Router), using the latest stable Next.js/React/TypeScript resolved at install time rather than pinned from memory.
-- The chosen approach proxies all backend calls through a server-side layer in the web app and stores the session in an httpOnly, Secure, SameSite cookie; the browser never holds a bearer token. (This is the default resolution; the alternative direct-browser-to-backend approach is explicitly not chosen.)
+- The chosen approach proxies all backend calls through a server-side layer in the web app and stores the session in an httpOnly, Secure, SameSite=Lax cookie; the browser never holds a bearer token. (This is the default resolution; the alternative direct-browser-to-backend approach is explicitly not chosen.)
 - Server-rendered first paint is used for list/detail data, handed to the client cache as fallback; interactive/mutable data is owned by the client cache thereafter.
 - "Resource" is a deliberately generic stand-in intended to be renamed per real feature; no additional demo features or placeholder pages are in scope.
 - Design/UI is intentionally raw and easily re-themeable (a boilerplate starting point), built on generated component primitives rather than a bespoke design system.
