@@ -186,6 +186,20 @@ description: "Task list for Next.js Feature-Sliced Frontend Boilerplate"
 
 ---
 
+## Phase 7: Component Documentation (Storybook)
+
+**Purpose**: Stand up Storybook as the canonical, searchable catalog of reusable UI so engineers check for an existing component before building a new one (FR-029/FR-030/FR-031, SC-010). Depends on the reusable primitives existing (Phases 3–5).
+
+- [X] T080 Install and configure Storybook for the web app: add dev deps (`storybook`, `@storybook/nextjs`, `@storybook/addon-docs`) via `pnpm add -D`, create `apps/web/.storybook/main.ts` (Next.js framework preset, stories glob `../src/components/**/*.stories.tsx`, docs addon) and `apps/web/.storybook/preview.ts` (import Tailwind `../src/app/globals.css`, enable `autodocs` tag); add `storybook` and `build-storybook` scripts to `apps/web/package.json`
+- [X] T081 [P] Write co-located stories for all existing reusable components — one `*.stories.tsx` per file under `apps/web/src/components/ui/`: `button.stories.tsx` (all variants/sizes), `card.stories.tsx`, `dialog.stories.tsx`, `input.stories.tsx`, `label.stories.tsx`, `sonner.stories.tsx` — each covering primary states/variants
+- [X] T082 Enable the docs addon for auto-generated per-component docs: apply the `autodocs` tag (globally in `.storybook/preview.ts` or per story) and wire `react-docgen-typescript` so props/variants tables generate from TypeScript; verify a Docs page renders for each component
+- [X] T083 [P] Add a contribution note to `apps/web/docs/ARCHITECTURE.md` and `apps/web/README.md`: engineers MUST check Storybook (`pnpm storybook`) for an existing component before creating a new one, to avoid duplicating UI
+- [X] T084 Wire `build-storybook` into CI as a build gate (fails on a broken/undocumented component) and upload `storybook-static/` as an artifact; optionally publish it to a static host so the catalog is browsable without a local checkout
+
+**Checkpoint**: `pnpm build-storybook` succeeds; every reusable component has a searchable, auto-documented story; the "check before building" step is recorded in the contribution docs.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -194,6 +208,7 @@ description: "Task list for Next.js Feature-Sliced Frontend Boilerplate"
 - **Foundational (Phase 2)**: depends on Setup — BLOCKS all user stories.
 - **User Stories (Phase 3–5)**: all depend on Foundational. US1 is the MVP. US2 and US3 depend only on Foundational (US2 hardens the same eslint config touched in T005; US3 consumes shared `lib/*` + test harness). US3's E2E leg (T075) also needs US1's auth flow.
 - **Polish (Phase 6)**: depends on the desired user stories being complete (T075 needs US1 + US3).
+- **Component Documentation (Phase 7)**: depends on the reusable primitives existing (Phases 3–5); independent of Polish and can run in parallel with it.
 
 ### User Story Dependencies
 

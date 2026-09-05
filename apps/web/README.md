@@ -66,9 +66,20 @@ pnpm lint         # ESLint (incl. the feature import-boundary rule)
 pnpm typecheck    # tsc --noEmit (strict)
 pnpm format       # Prettier
 pnpm check        # typecheck + lint + test (run before pushing)
+pnpm storybook       # component catalog on http://localhost:6006
+pnpm build-storybook # static catalog build → storybook-static/
 ```
 
 All of the above are also available from the repo root via `task web:<cmd>`.
+
+## Component catalog
+
+Reusable UI primitives (`components/ui`, and any future `components/shared`) are
+documented in **Storybook**, the canonical catalog of shared components.
+**Before building a new reusable component, run `pnpm storybook` and search the
+catalog — reuse an existing primitive instead of duplicating UI.** Every shared
+component ships a co-located `*.stories.tsx`; see
+[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#component-catalog-storybook).
 
 ## Project layout
 

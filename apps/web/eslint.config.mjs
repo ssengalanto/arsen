@@ -34,6 +34,9 @@ const NEXT_RESERVED_DEFAULT_EXPORT = [
   "src/app/**/default.tsx",
   "src/app/**/opengraph-image.tsx",
   "**/*.config.{ts,mts,js,mjs}",
+  // Storybook requires default exports: the story `meta` and the .storybook config.
+  "**/*.stories.tsx",
+  ".storybook/**/*.ts",
 ];
 
 const eslintConfig = defineConfig([
@@ -89,6 +92,7 @@ const eslintConfig = defineConfig([
     "coverage/**",
     "playwright-report/**",
     "test-results/**",
+    "storybook-static/**",
     "next-env.d.ts",
   ]),
 ]);

@@ -137,3 +137,28 @@ apps/web/
 ## Complexity Tracking
 
 > No constitution violations to justify — section intentionally empty.
+
+## Component Documentation (Storybook)
+
+Satisfies FR-029/FR-030/FR-031 and SC-010. Storybook is the canonical catalog of reusable UI so engineers check for an existing component before building a new one, avoiding duplication.
+
+**Tooling**: Storybook 9 for React with the Next.js framework preset (`@storybook/nextjs` / Vite builder), aligned to the installed Next 16.3.4 / React 19 and Tailwind v4. Add as dev dependencies only; it never ships in the app bundle.
+
+**Story location convention**: Stories are **co-located** next to the component they document — `src/components/ui/button.tsx` → `src/components/ui/button.stories.tsx`. This keeps a component and its documentation in one place and makes a missing story obvious in review. Feature-internal components stay private to their slice; only genuinely reusable primitives under `components/ui` (and any future `components/shared`) are cataloged.
+
+**Docs addon**: Enable `@storybook/addon-docs` with `autodocs` (tag-based) so each component gets an auto-generated Docs page from its TypeScript props and CSF stories — no hand-maintained prop tables. `react-docgen-typescript` provides prop descriptions/types. Tailwind v4 `globals.css` is imported in `.storybook/preview.ts` so stories render with real theme tokens.
+
+**Access**:
+- **Local**: `pnpm storybook` runs the catalog on a dev port; `pnpm build-storybook` produces a static site in `storybook-static/`.
+- **CI**: `build-storybook` runs in the web pipeline as a build gate (a broken/undocumented component fails the build); the static output is uploaded as an artifact.
+- **Hosting (optional)**: the static `storybook-static/` bundle can be published to any static host (e.g. GitHub Pages / preview deploy) so the catalog is browsable without a local checkout. Deployment is optional and gated behind the CI artifact.
+
+**Structure additions** (append-only to the tree above):
+
+```text
+apps/web/
+├── .storybook/
+│   ├── main.ts      # framework preset, stories glob, addons (docs)
+│   └── preview.ts   # global decorators, Tailwind globals.css import, autodocs tag
+└── src/components/ui/*.stories.tsx   # one co-located story per reusable component
+```

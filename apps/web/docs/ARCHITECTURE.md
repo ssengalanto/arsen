@@ -103,6 +103,22 @@ Rules:
   in `localStorage`, `sessionStorage`, or any store — this is asserted by
   `features/auth/token-secrecy.test.ts`.
 
+## Component catalog (Storybook)
+
+Reusable primitives under `components/ui` (and any future `components/shared`) are
+cataloged in **Storybook** — the canonical, searchable index of shared UI.
+
+- **Before building a new reusable component, check Storybook first.** Run
+  `pnpm storybook` (or browse the CI-built catalog) and search for what you need.
+  If a primitive already exists, use it instead of duplicating UI.
+- Every reusable component **must** ship with a co-located story
+  (`button.tsx` → `button.stories.tsx`) covering its primary states/variants.
+  A broken or missing story fails `pnpm build-storybook`.
+- Docs pages (props/variants tables) are auto-generated from TypeScript via the
+  `autodocs` tag + `react-docgen-typescript` — no hand-maintained prop tables.
+- Feature-internal components stay private to their slice and are **not**
+  cataloged; only genuinely shared primitives belong in Storybook.
+
 ## Import boundary
 
 `eslint.config.mjs` exports `restrictedImportsOptions`, used by both the project
@@ -129,7 +145,9 @@ the rule without a special case.
 5. Build read hooks (`useSWR`) and write hooks (`useSWRMutation` + bound
    `mutate`).
 6. Build components consuming the hooks; keep server state in SWR and UI state in
-   the store.
+   the store. **Check Storybook (`pnpm storybook`) for an existing reusable
+   primitive before building a new one** — add a co-located `*.stories.tsx` for
+   any new shared component under `components/ui`.
 7. Export the public surface from `src/features/<name>/index.ts`.
 8. Add route pages under `app/`; RSC-fetch initial data into a `<SWRConfig
    fallback>` boundary for first paint.

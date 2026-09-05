@@ -128,6 +128,12 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 - **FR-027**: An end-to-end test MUST cover the happy path: register (→ redirected to login with a verify notice) → log in with a pre-verified account → create a resource → see it listed → log out → confirm a protected route redirects to login.
 - **FR-028**: A README MUST get a developer from clone to a working login in under five minutes.
 
+#### Component documentation (Storybook)
+
+- **FR-029**: Every reusable UI component MUST be documented in Storybook with at least one story demonstrating its primary states/variants.
+- **FR-030**: Storybook MUST serve as the canonical component catalog, and the contribution process MUST require an engineer to check it for an existing component before building a new one, to avoid duplicating UI.
+- **FR-031**: The component catalog MUST be browsable and searchable, and MUST present auto-generated usage documentation (props/variants) per component via a docs addon.
+
 ### Key Entities *(include if feature involves data)*
 
 - **User Profile**: The non-sensitive representation of the signed-in user (identifier, email, display fields) safe to cache client-side for UI. Explicitly excludes any credential.
@@ -149,6 +155,7 @@ An engineer can study one generic `resource` slice that demonstrates the complet
 - **SC-007**: Automated coverage on feature logic (hooks, fetchers, schemas) is at least 80%.
 - **SC-008**: The end-to-end happy path (register → verify-notice redirect → login with a pre-verified account → create → logout → protected-route redirect) passes reliably.
 - **SC-009**: Every runtime dependency has a one-line justification and a rejected alternative recorded.
+- **SC-010**: 100% of reusable UI components have a Storybook story, the catalog is browsable/searchable with per-component usage docs, and the "check Storybook before building a new component" step is written into the contribution guide.
 
 ## Assumptions
 

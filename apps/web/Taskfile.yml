@@ -45,3 +45,13 @@ tasks:
     desc: Run TypeScript type checker
     cmds:
       - pnpm typecheck
+
+  storybook:
+    desc: Start the Storybook component catalog
+    cmds:
+      - pnpm storybook
+
+  build-storybook:
+    desc: Build the static Storybook catalog (CI build gate)
+    cmds:
+      - pnpm build-storybook
