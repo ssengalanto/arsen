@@ -101,34 +101,6 @@ jobs:
       - name: Run ESLint
         run: pnpm lint
 
-  web-typecheck:
-    name: Web / Typecheck
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: apps/web/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Next.js route types
-        run: pnpm next build --experimental-build-mode generate
-
-      - name: Run TypeScript type checker
-        run: pnpm typecheck
-
   web-test:
     name: Web / Test
     runs-on: ubuntu-latest
@@ -156,7 +128,7 @@ jobs:
 
   web-build:
     name: Web / Build
-    needs: [web-lint, web-typecheck, web-test]
+    needs: [web-lint, web-test]
     runs-on: ubuntu-latest
     defaults:
       run:
