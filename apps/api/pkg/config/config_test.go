@@ -27,6 +27,7 @@ func TestNew_MissingJWTSecret(t *testing.T) {
 
 func TestNew_MissingDatabaseURL(t *testing.T) {
 	resetViper(t)
+	t.Setenv("DATABASE_URL", "")
 	t.Setenv("JWT_SECRET", "supersecret")
 	t.Setenv("REDIS_URL", "redis://localhost:6379")
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
-import { proxy } from "../../proxy";
+import { proxy } from "../proxy";
 
 function request(path: string, cookies: Record<string, string> = {}) {
   const req = new NextRequest(`http://localhost:3000${path}`);

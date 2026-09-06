@@ -39,7 +39,7 @@ import (
 // @tag.description Health and readiness check endpoints
 func main() {
 	fx.New(
-		fx.Provide(func() *slog.Logger { return slog.Default() }),
+		fx.Provide(slog.Default),
 		config.Module,
 		database.Module,
 		redis.Module,
