@@ -49,8 +49,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      DATABASE_URL: postgres://arsen:arsen@localhost:5432/arsen?sslmode=disable
     steps:
       - uses: actions/checkout@v5
 
@@ -61,6 +59,8 @@ jobs:
 
       - name: Run tests
         run: go test -race -count=1 ./...
+        env:
+          DATABASE_URL: postgres://arsen:arsen@localhost:5432/arsen?sslmode=disable
 
   build:
     name: Build
