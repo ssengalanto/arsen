@@ -7,13 +7,15 @@ Monorepo for the Arsen platform: a Go API backend and a Next.js web frontend.
 ```
 apps/
   api/    Go backend — JWT auth, vertical slice architecture, CQRS
-  web/    Next.js frontend — React, TypeScript, Tailwind CSS
+  web/    Next.js frontend — React 19, TypeScript, Tailwind v4, feature slices + BFF
 ```
+
+See each workspace's README for details: [`apps/api/README.md`](apps/api/README.md) and [`apps/web/README.md`](apps/web/README.md).
 
 ## Prerequisites
 
 - Go 1.26+
-- Node.js 20+
+- Node.js 24+ (current LTS)
 - [pnpm](https://pnpm.io) (`npm install -g pnpm`)
 - Docker and Docker Compose
 - [Task](https://taskfile.dev) (go-task/task)
@@ -37,6 +39,8 @@ cp .env.example .env
 pnpm install
 task dev
 ```
+
+Reusable UI primitives are cataloged in Storybook (`pnpm storybook`). Architecture and the "add a feature slice" guide live in [`apps/web/docs/ARCHITECTURE.md`](apps/web/docs/ARCHITECTURE.md).
 
 ### Full Stack (Docker)
 

@@ -289,6 +289,8 @@ go test ./... -run TestLogin -v   # Run a specific test
 
 **CQRS with Go Generics** -- `pkg/cqrs/` provides type-safe `CommandBus[C, R]` and `QueryBus[Q, R]` with middleware support (logging, recovery, validation). Commands mutate state, queries read it. Event publishing is available for cross-feature communication (e.g., sending a welcome email after registration).
 
+**Cross-Feature Data Access** -- Features never import another feature's repository. When feature A needs data owned by feature B, feature B exposes a query through its `QueryBus` and A injects the bus. For example, auth needs user data for login, so the user feature exposes `GetUserByEmailQuery` / `GetUserByEmailResult` and auth injects `*cqrs.QueryBus[user.GetUserByEmailQuery, *user.GetUserByEmailResult]` — it never touches `user.Repository`. This keeps each slice's data access private and routes all cross-feature reads through the bus.
+
 **Dependency Injection** -- uber/fx wires everything in `cmd/api/main.go`. Each package exposes an `fx.Module` that provides its constructors. The application starts by composing all modules.
 
 **Token Rotation with Family Model** -- Refresh tokens use a family ID. When a token is refreshed, the entire family is revoked and a new token is issued under the same family. If a revoked token is reused, the entire family is invalidated, detecting token theft.

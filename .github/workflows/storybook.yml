@@ -1,0 +1,47 @@
+name: Storybook
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/storybook.yml"
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/storybook.yml"
+
+defaults:
+  run:
+    working-directory: apps/web
+
+jobs:
+  build-storybook:
+    name: Build component catalog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build gate: a broken or undocumented reusable component fails the build.
+      - name: Build Storybook
+        run: pnpm build-storybook
+
+      - name: Upload static catalog
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: apps/web/storybook-static
+          if-no-files-found: error

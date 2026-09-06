@@ -1,7 +1,7 @@
 # ============================================================================
 # Dev stage: hot-reload with Air, debug tools, mounted source
 # ============================================================================
-FROM golang:1.26-alpine AS dev
+FROM golang:1.27-alpine AS dev
 
 RUN apk add --no-cache git curl
 RUN go install github.com/air-verse/air@latest
@@ -18,7 +18,7 @@ CMD ["air", "-c", ".air.toml"]
 # ============================================================================
 # Build stage: compile statically linked binary
 # ============================================================================
-FROM golang:1.26-alpine AS build
+FROM golang:1.27-alpine AS build
 
 RUN apk add --no-cache git
 
