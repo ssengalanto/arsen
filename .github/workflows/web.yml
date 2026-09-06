@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Next.js route types
+        run: pnpm next build --experimental-build-mode generate
+
       - name: Run TypeScript type checker
         run: pnpm typecheck
 
