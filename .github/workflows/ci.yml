@@ -3,23 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
-    paths:
-      - "go.work"
-      - "go.work.sum"
-      - "Taskfile.yml"
-      - "docker-compose*.yml"
-      - ".github/workflows/ci.yml"
   pull_request:
-    paths:
-      - "go.work"
-      - "go.work.sum"
-      - "Taskfile.yml"
-      - "docker-compose*.yml"
-      - ".github/workflows/ci.yml"
 
 jobs:
-  api:
-    name: API
+  api-lint:
+    name: API / Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,14 +20,64 @@ jobs:
           go-version: "1.27"
           cache-dependency-path: apps/api/go.sum
 
-      - name: Build
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: latest
+          working-directory: apps/api
+
+  api-test:
+    name: API / Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: arsen
+          POSTGRES_PASSWORD: arsen
+          POSTGRES_DB: arsen
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U arsen"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Run tests
+        run: go test -race -count=1 ./...
+        env:
+          DATABASE_URL: postgres://arsen:arsen@localhost:5432/arsen?sslmode=disable
+
+  api-build:
+    name: API / Build
+    needs: [api-lint, api-test]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Build binary
         run: go build -o bin/arsen ./cmd/api
 
-      - name: Test
-        run: go test ./...
-
-  web:
-    name: Web
+  web-lint:
+    name: Web / Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,8 +98,116 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
+      - name: Run ESLint
+        run: pnpm lint
+
+  web-typecheck:
+    name: Web / Typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Next.js route types
+        run: pnpm next build --experimental-build-mode generate
+
+      - name: Run TypeScript type checker
+        run: pnpm typecheck
+
+  web-test:
+    name: Web / Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Vitest
+        run: pnpm test
+
+  web-build:
+    name: Web / Build
+    needs: [web-lint, web-typecheck, web-test]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js
         run: pnpm build
 
-      - name: Test
-        run: pnpm test
+  web-storybook:
+    name: Web / Storybook
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Storybook
+        run: pnpm build-storybook
+
+      - name: Upload static catalog
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: apps/web/storybook-static
+          if-no-files-found: error
