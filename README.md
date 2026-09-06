@@ -15,7 +15,7 @@ See each workspace's README for details: [`apps/api/README.md`](apps/api/README.
 ## Prerequisites
 
 - Go 1.26+
-- Node.js 20+
+- Node.js 24+ (current LTS)
 - [pnpm](https://pnpm.io) (`npm install -g pnpm`)
 - Docker and Docker Compose
 - [Task](https://taskfile.dev) (go-task/task)

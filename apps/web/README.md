@@ -11,7 +11,7 @@ backend tokens into httpOnly cookies so the browser never holds a token.
 
 ### Prerequisites
 
-- Node 20+ and **pnpm 10** (`corepack enable`)
+- Node 24+ (current LTS) and **pnpm 10** (`corepack enable`)
 - The Go backend running with Postgres + Redis. From the repo root:
   `task docker-up` starts the full dev stack, or run `task api:run` with a local
   `.env` + Postgres + Redis.

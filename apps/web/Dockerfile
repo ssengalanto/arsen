@@ -1,7 +1,7 @@
 # ============================================================================
 # Dev stage: hot-reload with pnpm dev, mounted source
 # ============================================================================
-FROM node:20-alpine AS dev
+FROM node:24-alpine AS dev
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -17,7 +17,7 @@ CMD ["pnpm", "dev"]
 # ============================================================================
 # Build stage: production bundle
 # ============================================================================
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -32,7 +32,7 @@ RUN pnpm build
 # ============================================================================
 # Prod stage: standalone Next.js output on minimal image
 # ============================================================================
-FROM node:20-alpine AS prod
+FROM node:24-alpine AS prod
 
 WORKDIR /app
 
